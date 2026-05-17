@@ -1,0 +1,8 @@
+{
+    "name": "techwarzone-backend",
+    "version": "1.0.0",
+    "description": "Firestore Rules for Tech Warzone 2026",
+    "files": [
+        "firestore.rules"
+    ]
+}

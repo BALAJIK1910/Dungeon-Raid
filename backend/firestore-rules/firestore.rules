@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ====================
+    // HELPER FUNCTIONS
+    // ====================
+    
+    function isOrgani() {
+      return request.auth != null && (
+        request.auth.token.role == 'organizer' ||
+        exists(/databases/$(database)/documents/admin_users/$(request.auth.uid))
+      );
+    }
+    
+    function isTeam() {
+      return request.auth != null && request.auth.token.role == 'team';
+    }
+    
+    function isOwnTeam(teamId) {
+      return request.auth != null && request.auth.token.teamId == teamId;
+    }
+    
+    function isOwnEvent(eventId) {
+      return request.auth != null && request.auth.token.eventId == eventId;
+    }
+    
+    // ====================
+    // ALLOW ALL FOR TESTING
+    // ====================
+    
+    match /{document=**} {
+      allow read, write;
+    }
+    
+    match /admin_users/{uid} {
+      // Organizers can read their own doc
+      allow read: if request.auth != null && request.auth.uid == uid;
+      
+      // Only superadmin (backend service) can write
+      allow write: if false;
+    }
+  }
+}

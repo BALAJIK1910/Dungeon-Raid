@@ -1,0 +1,34 @@
+:root {
+  /* Backgrounds */
+  --bg-void:       #020608;   /* deepest background */
+  --bg-deep:       #060D12;   /* panel backgrounds */
+  --bg-surface:    #0A1520;   /* card/module surfaces */
+  --bg-raised:     #0F1E2E;   /* elevated elements */
+
+  /* Neon Accents */
+  --neon-cyan:     #00F0FF;   /* primary action, active states, borders */
+  --neon-cyan-dim: #00A8B5;   /* secondary cyan */
+  --neon-green:    #00FF88;   /* correct answer, success, boss damage */
+  --neon-amber:    #FFB300;   /* warnings, cooldowns, hint tokens */
+  --neon-red:      #FF1744;   /* danger, boss HP, incorrect, defeat */
+  --neon-violet:   #BF40FF;   /* power-up system, special events */
+
+  /* Text */
+  --text-primary:  #E0F4FF;   /* main readable text */
+  --text-secondary:#7BAFC4;   /* labels, metadata */
+  --text-muted:    #3A5A6E;   /* disabled, placeholder */
+
+  /* Borders & Glows */
+  --border-dim:    #0E2535;
+  --border-active: #00F0FF;
+  --glow-cyan:     0 0 8px #00F0FF, 0 0 24px rgba(0,240,255,0.3);
+  --glow-red:      0 0 8px #FF1744, 0 0 24px rgba(255,23,68,0.4);
+  --glow-green:    0 0 8px #00FF88, 0 0 20px rgba(0,255,136,0.3);
+  --glow-amber:    0 0 8px #FFB300, 0 0 20px rgba(255,179,0,0.3);
+  --glow-violet:   0 0 8px #BF40FF, 0 0 20px rgba(191,64,255,0.3);
+}
+
+body {
+  background-color: var(--bg-void);
+  color: var(--text-primary);
+}
