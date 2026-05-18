@@ -6,6 +6,7 @@ import { signInWithGoogle, signOutUser } from '../../firebase/auth';
 import ArenaView from './ArenaView';
 import PuzzleMatrix from './PuzzleMatrix';
 import TeamAnalytics from './TeamAnalytics';
+import BossBattleView from './BossBattleView';
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -78,8 +79,8 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <nav className="w-[220px] bg-[var(--bg-deep)] border-r border-[var(--border-dim)] flex flex-col sticky top-0 h-screen">
+    <div className="h-screen flex overflow-hidden">
+      <nav className="w-[220px] bg-[var(--bg-deep)] border-r border-[var(--border-dim)] flex flex-col h-full flex-shrink-0">
         <div className="p-6">
           <h1 className="font-orbitron font-bold text-[var(--neon-cyan)] text-lg">ADMIN.SYS</h1>
         </div>
@@ -93,13 +94,17 @@ const AdminLayout = () => {
           <NavLink to="/admin/analytics" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⬡ Team Analytics
           </NavLink>
+          <NavLink to="/admin/boss" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-amber)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+            ⚔ Boss Battle
+          </NavLink>
         </div>
       </nav>
-      <main className="flex-1 bg-[var(--bg-void)]">
+      <main className="flex-1 h-full overflow-auto bg-[var(--bg-void)] flex flex-col">
         <Routes>
           <Route path="arena" element={<ArenaView />} />
           <Route path="puzzles" element={<PuzzleMatrix />} />
           <Route path="analytics" element={<TeamAnalytics />} />
+          <Route path="boss" element={<BossBattleView />} />
           <Route path="*" element={<Navigate to="/admin/arena" replace />} />
         </Routes>
       </main>
