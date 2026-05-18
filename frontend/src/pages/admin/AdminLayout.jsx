@@ -6,12 +6,13 @@ import { signInWithGoogle, signOutUser } from '../../firebase/auth';
 import ArenaView from './ArenaView';
 import PuzzleMatrix from './PuzzleMatrix';
 import TeamAnalytics from './TeamAnalytics';
-import BossBattleView from './BossBattleView';
+import BossBattleModal from './BossBattleModal';
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
   const authorized = useAdminGuard(user?.uid);
   const [signingIn, setSigningIn] = useState(false);
+  const [bossBattleOpen, setBossBattleOpen] = useState(false);
 
   // Show loading while verifying auth state
   if (loading || authorized === null) {
@@ -94,9 +95,12 @@ const AdminLayout = () => {
           <NavLink to="/admin/analytics" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⬡ Team Analytics
           </NavLink>
-          <NavLink to="/admin/boss" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-amber)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+          <button
+            onClick={() => setBossBattleOpen(true)}
+            className={`px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors border-transparent text-left w-full`}
+          >
             ⚔ Boss Battle
-          </NavLink>
+          </button>
         </div>
       </nav>
       <main className="flex-1 h-full overflow-auto bg-[var(--bg-void)] flex flex-col">
@@ -104,12 +108,15 @@ const AdminLayout = () => {
           <Route path="arena" element={<ArenaView />} />
           <Route path="puzzles" element={<PuzzleMatrix />} />
           <Route path="analytics" element={<TeamAnalytics />} />
-          <Route path="boss" element={<BossBattleView />} />
           <Route path="*" element={<Navigate to="/admin/arena" replace />} />
         </Routes>
       </main>
+
+      {/* Boss Battle Modal */}
+      <BossBattleModal isOpen={bossBattleOpen} onClose={() => setBossBattleOpen(false)} />
     </div>
   );
 };
 
 export default AdminLayout;
+
