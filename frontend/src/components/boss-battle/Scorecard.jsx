@@ -5,17 +5,22 @@ import { gameStateAdapter } from '../../utils/gameStateAdapter';
 const Scorecard = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [allPlayers, setAllPlayers] = useState([]);
+  const [outcome, setOutcome] = useState('WON');
 
   useEffect(() => {
     const unsubscribe = gameStateAdapter.subscribe((state) => {
-      if (state.bossDefeated && !isVisible) {
+      // Show scorecard when game concludes (either victory or defeat)
+      if ((state.bossDefeated || state.gameConcluded) && !isVisible) {
         setIsVisible(true);
         setAllPlayers(state.allPlayersSorted);
+        setOutcome(state.gameOutcome || 'WON');
       }
     });
 
     return unsubscribe;
   }, [isVisible]);
+
+  const isVictory = outcome === 'WON';
 
   return (
     <AnimatePresence>
@@ -26,22 +31,22 @@ const Scorecard = () => {
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-          className="absolute top-0 right-0 h-full w-[400px] max-w-full z-50 bg-[#0B0C10]/95 backdrop-blur-2xl border-l-2 border-yellow-400 p-8 overflow-y-auto"
-          style={{ pointerEvents: 'auto' }}
+          className="absolute top-0 right-0 h-full w-[400px] max-w-full z-50 bg-[#0B0C10]/95 backdrop-blur-2xl border-l-2 p-8 overflow-y-auto"
+          style={{ pointerEvents: 'auto', borderColor: isVictory ? '#FFE81F' : '#FF3B30' }}
         >
           <div className="mb-8">
             <h2
-              className="text-4xl font-black text-white mb-2 tracking-tighter"
+              className={`text-4xl font-black mb-2 tracking-tighter ${isVictory ? 'text-green-400' : 'text-red-400'}`}
               style={{ fontFamily: 'Exo 2, sans-serif' }}
               data-testid="scorecard-title"
             >
-              VICTORY!
+              {isVictory ? 'VICTORY!' : 'DEFEATED!'}
             </h2>
             <p
-              className="text-green-400 text-sm tracking-wider"
+              className={`text-sm tracking-wider ${isVictory ? 'text-green-400' : 'text-red-400'}`}
               style={{ fontFamily: 'JetBrains Mono, monospace' }}
             >
-              Dragon Defeated
+              {isVictory ? 'Dragon Defeated' : 'All Questions Exhausted'}
             </p>
           </div>
 
@@ -113,4 +118,5 @@ const Scorecard = () => {
 };
 
 export default Scorecard;
+
 

@@ -36,6 +36,14 @@ export const gameStateAdapter = {
     return (currentGameState?.boss_current_hp ?? 0) <= 0;
   },
 
+  isGameConcluded() {
+    return currentGameState?.game_status === 'CONCLUDED';
+  },
+
+  getGameOutcome() {
+    return currentGameState?.game_outcome || null;
+  },
+
   getBossHealthPercentage() {
     const current = currentGameState?.boss_current_hp ?? 0;
     const max = currentGameState?.boss_max_hp ?? 1;
@@ -62,8 +70,12 @@ export const gameStateAdapter = {
       bossHealth: currentGameState?.boss_current_hp ?? 0,
       bossMaxHealth: currentGameState?.boss_max_hp ?? 1,
       bossHealthPercentage: this.getBossHealthPercentage(),
-      bossDefeated: this.isBossDefeated()
+      bossDefeated: this.isBossDefeated(),
+      gameStatus: currentGameState?.game_status || 'PENDING',
+      gameOutcome: this.getGameOutcome(),
+      gameConcluded: this.isGameConcluded()
     };
   }
 };
+
 

@@ -75,10 +75,16 @@ class BossScene extends Phaser.Scene {
 
       this.lastBossHp = currentHp;
 
-      // Check if boss is defeated
+      // Check if boss is defeated (victory)
       if (state.bossDefeated && !this.defeatTriggered) {
         this.defeatTriggered = true;
         this.triggerBossDefeat();
+      }
+
+      // Check if game concluded (defeat - all questions exhausted)
+      if (state.gameConcluded && state.gameOutcome === 'LOST' && !this.defeatTriggered) {
+        this.defeatTriggered = true;
+        this.triggerGameOver();
       }
     });
 
@@ -141,6 +147,24 @@ class BossScene extends Phaser.Scene {
     });
   }
 
+  triggerGameOver() {
+    // Screen effect for defeat
+    this.cameras.main.shake(500, 0.015);
+
+    this.tweens.add({
+      targets: this.boss,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      alpha: 0.3,
+      duration: 1500,
+      ease: 'Power2'
+    });
+
+    this.time.delayedCall(1500, () => {
+      this.cameras.main.flash(300, 255, 0, 0);
+    });
+  }
+
   update() {
     // Update logic if needed
   }
@@ -153,3 +177,4 @@ class BossScene extends Phaser.Scene {
 }
 
 export default BossScene;
+
