@@ -17,11 +17,6 @@ const Scorecard = () => {
     return unsubscribe;
   }, [isVisible]);
 
-  const handleReset = () => {
-    setIsVisible(false);
-    window.location.reload();
-  };
-
   return (
     <AnimatePresence>
       {isVisible && (
@@ -111,15 +106,6 @@ const Scorecard = () => {
               ))}
             </div>
           </div>
-
-          <button
-            onClick={handleReset}
-            data-testid="reset-button"
-            className="w-full py-3 bg-yellow-400 text-black font-bold uppercase tracking-wider hover:bg-yellow-300 transition-colors"
-            style={{ fontFamily: 'Exo 2, sans-serif' }}
-          >
-            Battle Again
-          </button>
         </motion.div>
       )}
     </AnimatePresence>
@@ -127,3 +113,4 @@ const Scorecard = () => {
 };
 
 export default Scorecard;
+

@@ -76,27 +76,6 @@ export default function BossBattleView() {
 
       {/* Scorecard Overlay */}
       <Scorecard />
-
-      {/* Instructions */}
-      <div
-        data-testid="instructions"
-        className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md border border-yellow-400/30 p-4 max-w-xs z-20"
-        style={{ pointerEvents: 'auto' }}
-      >
-        <p
-          className="text-yellow-400 text-sm font-bold mb-2"
-          style={{ fontFamily: 'Exo 2, sans-serif' }}
-        >
-          HOW TO PLAY
-        </p>
-        <p
-          className="text-gray-300 text-xs"
-          style={{ fontFamily: 'JetBrains Mono, monospace' }}
-        >
-          Teams solve puzzles to deal damage! Watch the leaderboard update in
-          real-time as teams battle the celestial dragon.
-        </p>
-      </div>
     </div>
   );
 }
