@@ -20,24 +20,13 @@ export default function BossBattleView() {
 
   if (!gameState) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          minHeight: '300px',
-          fontFamily: "'Courier New',monospace",
-          color: '#3a5a20',
-          flexDirection: 'column',
-          gap: '8px'
-        }}
-      >
-        <div style={{ fontSize: '13px', letterSpacing: '0.12em' }}>
-          NO ACTIVE EVENT LOADED
-        </div>
-        <div style={{ fontSize: '10px', color: '#2a3a18' }}>
-          Select an event from Arena View first
+      <div className="p-8 max-w-md">
+        <h2 className="font-orbitron text-2xl text-[var(--neon-red)] mb-6">BOSS BATTLE</h2>
+        <div className="bg-[var(--bg-raised)] border border-[var(--neon-red)] rounded p-6">
+          <p className="font-rajdhani text-[var(--text-secondary)] mb-2">NO ACTIVE EVENT LOADED</p>
+          <p className="font-mono text-xs text-[var(--text-tertiary)]">
+            Select an event from Arena View first
+          </p>
         </div>
       </div>
     );
@@ -45,13 +34,12 @@ export default function BossBattleView() {
 
   return (
     <div
-      className="App"
+      className="App w-full h-full"
       data-testid="app-container"
       style={{
-        position: 'absolute',
-        inset: 0,
+        position: 'relative',
         width: '100%',
-        height: '100vh',
+        height: '100%',
         overflow: 'hidden',
         background: '#050505'
       }}
