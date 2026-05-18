@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useGlobalGameState, useLeaderboardContext } from '../../context';
 import { gameStateAdapter } from '../../utils/gameStateAdapter';
 import GameManager from '../../components/boss-battle/GameManager';
@@ -11,9 +11,10 @@ export default function BossBattleView() {
   const { gameState } = useGlobalGameState();
   const { teams } = useLeaderboardContext();
 
+  // Sync Firebase state with game adapter whenever either changes
   useEffect(() => {
-    if (gameState && teams) {
-      gameStateAdapter.updateFromFirebase(gameState, teams);
+    if (gameState) {
+      gameStateAdapter.setGameState(gameState, teams);
     }
   }, [gameState, teams]);
 
@@ -92,10 +93,11 @@ export default function BossBattleView() {
           className="text-gray-300 text-xs"
           style={{ fontFamily: 'JetBrains Mono, monospace' }}
         >
-          Click anywhere to attack! Watch teams battle the celestial dragon in
-          real-time. First to defeat wins!
+          Teams solve puzzles to deal damage! Watch the leaderboard update in
+          real-time as teams battle the celestial dragon.
         </p>
       </div>
     </div>
   );
 }
+

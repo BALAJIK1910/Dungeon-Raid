@@ -4,12 +4,11 @@ import { gameStateAdapter } from '../utils/gameStateAdapter';
 class BossScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BossScene' });
-    this.damagePopups = [];
     this.defeatTriggered = false;
+    this.lastBossHp = null;
   }
 
   preload() {
-    // Load assets
     this.load.image('boss', 'https://static.prod-images.emergentagent.com/jobs/42bbef03-b300-4fd2-8418-54a67adfe083/images/bc271e360a54eb4f2ca1121df89affeb896911843d8c2ff31113d1caf3cfcf69.png');
     this.load.image('background', 'https://static.prod-images.emergentagent.com/jobs/42bbef03-b300-4fd2-8418-54a67adfe083/images/583d5268e51c7880f4ede62248ae6976b514d3da4b4ab3c31592594259ac210a.png');
     this.load.image('player', 'https://static.prod-images.emergentagent.com/jobs/42bbef03-b300-4fd2-8418-54a67adfe083/images/6142c2d5aa846f5be73327b04ddb13ccc77f53e1bdc8d6c9d7e6462b65a573af.png');
@@ -64,100 +63,28 @@ class BossScene extends Phaser.Scene {
       this.playerSprites.push(sprite);
     });
 
-    // Make canvas clickable for attacks
-    this.input.on('pointerdown', (pointer) => {
-      if (!gameStateAdapter.isBossDefeated()) {
-        this.triggerRandomAttack();
-      }
-    });
-
-    // Auto-attack simulation every 2-4 seconds
-    this.time.addEvent({
-      delay: Phaser.Math.Between(2000, 4000),
-      callback: () => {
-        if (!gameStateAdapter.isBossDefeated()) {
-          this.triggerRandomAttack();
-        }
-      },
-      loop: true
-    });
-
-    // Subscribe to game state changes
+    // Subscribe to game state changes for damage visualization
     this.unsubscribe = gameStateAdapter.subscribe((state) => {
+      const currentHp = state.bossHealth;
+
+      // Check if damage was dealt
+      if (this.lastBossHp !== null && currentHp < this.lastBossHp) {
+        this.screenShake();
+        this.flashBoss();
+      }
+
+      this.lastBossHp = currentHp;
+
+      // Check if boss is defeated
       if (state.bossDefeated && !this.defeatTriggered) {
         this.defeatTriggered = true;
         this.triggerBossDefeat();
       }
     });
-  }
 
-  triggerRandomAttack() {
-    const players = gameStateAdapter.getPlayers();
-    const randomPlayer = players[Phaser.Math.Between(0, players.length - 1)];
-    const damage = Phaser.Math.Between(500, 2000);
-
-    gameStateAdapter.addDamage(randomPlayer.id, damage);
-
-    // Visual effects
-    this.showDamageEffect(randomPlayer, damage);
-    this.screenShake();
-    this.flashBoss();
-  }
-
-  showDamageEffect(player, damage) {
-    const { width, height } = this.scale;
-
-    const playerSprite = this.playerSprites.find(s => s.getData('playerId') === player.id);
-    const startX = playerSprite ? playerSprite.x : width / 2;
-    const startY = playerSprite ? playerSprite.y : height - 80;
-
-    const popBg = this.add.rectangle(startX, startY - 30, 150, 60, 0x000000, 0.9);
-    const popText = this.add.text(startX, startY - 30, `${player.name}\n-${damage}`, {
-      fontSize: '16px',
-      fontFamily: 'JetBrains Mono, monospace',
-      color: player.color,
-      align: 'center',
-      fontStyle: 'bold'
-    });
-    popText.setOrigin(0.5);
-
-    this.tweens.add({
-      targets: [popBg, popText],
-      y: startY - 120,
-      alpha: 0,
-      duration: 1500,
-      ease: 'Power2',
-      onComplete: () => {
-        popBg.destroy();
-        popText.destroy();
-      }
-    });
-
-    this.tweens.add({
-      targets: [popBg, popText],
-      x: `+=${Phaser.Math.Between(-20, 20)}`,
-      duration: 1500,
-      ease: 'Sine.easeInOut'
-    });
-
-    const dmgText = this.add.text(this.boss.x, this.boss.y, `-${damage}`, {
-      fontSize: '48px',
-      fontFamily: 'Exo 2, sans-serif',
-      color: '#FF3B30',
-      fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 4
-    });
-    dmgText.setOrigin(0.5);
-
-    this.tweens.add({
-      targets: dmgText,
-      y: this.boss.y - 100,
-      alpha: 0,
-      duration: 1000,
-      ease: 'Power2',
-      onComplete: () => dmgText.destroy()
-    });
+    // Initialize lastBossHp
+    const initialState = gameStateAdapter.getState();
+    this.lastBossHp = initialState.bossHealth;
   }
 
   screenShake() {
