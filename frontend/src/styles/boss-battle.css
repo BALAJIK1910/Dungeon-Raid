@@ -1,0 +1,496 @@
+/* Boss Battle Raid Animations */
+
+:root {
+  --phantom-gold: #d4af37;
+  --phantom-blue: #00e0ff;
+  --phantom-red: #ff4444;
+  --phantom-purple: #d946ef;
+  --phantom-green: #00ff00;
+  --crit: #ffd700;
+  --gold: #d4af37;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+  --ember: #ff8a00;
+  --foreground: #ffffff;
+  --muted-foreground: #888888;
+  --border: #333333;
+  --glow-gold: 0 0 20px var(--gold);
+  --glow-ember: 0 0 20px var(--ember);
+  --text-glow: 0 0 10px currentColor;
+}
+
+/* Boss Animations */
+@keyframes boss-idle {
+
+  0%,
+  100% {
+    transform: translateY(0px) scaleY(1);
+  }
+
+  50% {
+    transform: translateY(-8px) scaleY(1.02);
+  }
+}
+
+@keyframes boss-flow-hit {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes boss-flow-crit {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+  }
+
+  30% {
+    transform: scale(0.92) rotate(3deg);
+    filter: brightness(1.3);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+.boss-idle {
+  animation: boss-idle 6s ease-in-out infinite;
+}
+
+.boss-flow-hit {
+  animation: boss-flow-hit 0.55s ease-out;
+}
+
+.boss-flow-crit {
+  animation: boss-flow-crit 0.9s ease-out;
+}
+
+@keyframes boss-hit {
+  0% {
+    opacity: 0.6;
+    filter: brightness(1.5) saturate(1.2);
+  }
+
+  100% {
+    opacity: 0;
+    filter: brightness(1) saturate(1);
+  }
+}
+
+.boss-hit {
+  animation: boss-hit 0.3s ease-out !important;
+}
+
+/* Player Animations */
+@keyframes player-idle {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes player-attack {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  15% {
+    transform: translate(-15px, -20px) scale(0.95);
+  }
+
+  30% {
+    transform: translate(20px, -25px) scale(0.92);
+  }
+
+  60% {
+    transform: translate(5px, -5px) scale(0.98);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes player-attack-crit {
+  0% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1);
+  }
+
+  15% {
+    transform: translate(-20px, -28px) scale(0.92);
+  }
+
+  35% {
+    transform: translate(28px, -32px) scale(0.88);
+    filter: brightness(1.4);
+  }
+
+  70% {
+    transform: translate(8px, -8px) scale(0.96);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1);
+  }
+}
+
+.player-idle {
+  animation: player-idle 3s ease-in-out infinite;
+}
+
+.player-attack {
+  animation: player-attack 0.6s ease-out;
+}
+
+.player-attack-crit {
+  animation: player-attack-crit 0.8s ease-out;
+}
+
+/* Floating Damage Numbers */
+@keyframes float-up {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(0, -80px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.float-up {
+  animation: float-up 1.1s ease-out forwards;
+}
+
+/* Screen Shake */
+@keyframes shake-sm {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  10% {
+    transform: translate(-4px, -4px);
+  }
+
+  20% {
+    transform: translate(4px, 4px);
+  }
+
+  30% {
+    transform: translate(-4px, 4px);
+  }
+
+  40% {
+    transform: translate(4px, -4px);
+  }
+
+  50% {
+    transform: translate(-2px, 2px);
+  }
+
+  60% {
+    transform: translate(2px, -2px);
+  }
+
+  70% {
+    transform: translate(-1px, -1px);
+  }
+
+  80% {
+    transform: translate(1px, 1px);
+  }
+
+  90% {
+    transform: translate(-1px, 0px);
+  }
+}
+
+@keyframes shake-lg {
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  10% {
+    transform: translate(-12px, -12px);
+  }
+
+  20% {
+    transform: translate(12px, 12px);
+  }
+
+  30% {
+    transform: translate(-12px, 12px);
+  }
+
+  40% {
+    transform: translate(12px, -12px);
+  }
+
+  50% {
+    transform: translate(-6px, 6px);
+  }
+
+  60% {
+    transform: translate(6px, -6px);
+  }
+
+  70% {
+    transform: translate(-3px, -3px);
+  }
+
+  80% {
+    transform: translate(3px, 3px);
+  }
+
+  90% {
+    transform: translate(-2px, 0px);
+  }
+}
+
+.shake-sm {
+  animation: shake-sm 0.22s ease-out;
+}
+
+.shake-lg {
+  animation: shake-lg 0.42s ease-out;
+}
+
+/* Crit Flash */
+@keyframes crit-flash {
+  0% {
+    opacity: 0.55;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+.crit-flash {
+  animation: crit-flash 0.4s ease-out forwards !important;
+}
+
+/* Edge Pulse */
+@keyframes edge-pulse {
+
+  0%,
+  100% {
+    box-shadow: inset 0 0 180px 40px oklch(0.55 0.27 25 / 0.7);
+  }
+
+  50% {
+    box-shadow: inset 0 0 180px 40px oklch(0.6 0.3 25 / 0.9);
+  }
+}
+
+.edge-pulse {
+  animation: edge-pulse 1.1s ease-in-out infinite;
+}
+
+/* Shockwave */
+@keyframes shockwave {
+  0% {
+    border-width: 2px;
+    opacity: 1;
+  }
+
+  100% {
+    border-width: 1px;
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+.shockwave {
+  animation: shockwave 0.6s ease-out forwards;
+  border-width: 2px;
+}
+
+/* Sparks */
+@keyframes spark-fly {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a, 0deg)) translateY(var(--d, 0px));
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a, 0deg)) translateY(calc(var(--d, 0px) * 1.5));
+  }
+}
+
+.spark {
+  animation: spark-fly 0.65s ease-out forwards;
+}
+
+/* Slash Trail */
+@keyframes slash-trail {
+  0% {
+    opacity: 0;
+    clip-path: polygon(0% 0%, 0% 100%, 5% 100%, 5% 0%);
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    clip-path: polygon(0% 0%, 0% 100%, 100% 100%, 100% 0%);
+  }
+}
+
+.slash-trail {
+  animation: slash-trail 0.32s ease-out forwards;
+}
+
+/* Charge Aura */
+@keyframes charge-aura {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+.charge-aura {
+  animation: charge-aura 0.6s ease-out forwards;
+}
+
+/* Ring Spin */
+@keyframes ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.ring-spin {
+  animation: ring-spin 14s linear infinite;
+}
+
+/* HP Shimmer */
+@keyframes hp-shimmer {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.hp-shimmer {
+  animation: hp-shimmer 2.4s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* Low HP Pulse */
+@keyframes low-hp-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 18px oklch(0.6 0.22 30 / 0.55);
+  }
+
+  50% {
+    box-shadow: 0 0 28px oklch(0.7 0.28 20 / 0.8);
+  }
+}
+
+.low-hp {
+  animation: low-hp-pulse 1.2s ease-in-out infinite;
+}
+
+/* Log Row Animation */
+@keyframes log-row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.log-row {
+  animation: log-row-enter 0.3s ease-out;
+}
+
+/* UI Panels */
+.panel {
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.panel-corner {
+  border-radius: 0.25rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Text Glow */
+.text-glow-gold {
+  text-shadow: var(--glow-gold);
+}
+
+.text-glow-ember {
+  text-shadow: var(--glow-ember);
+}
+
+/* Utility Classes */
+.font-display {
+  font-family: 'Exo 2', 'Orbitron', sans-serif;
+  font-weight: 900;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

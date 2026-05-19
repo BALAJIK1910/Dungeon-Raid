@@ -1,24 +1,13 @@
 import React, { useEffect } from 'react';
-import { useGlobalGameState, useLeaderboardContext } from '../../context';
-import { gameStateAdapter } from '../../utils/gameStateAdapter';
-import GameManager from '../../components/boss-battle/GameManager';
-import HealthBar from '../../components/boss-battle/HealthBar';
-import Leaderboard from '../../components/boss-battle/Leaderboard';
-import ActionFigures from '../../components/boss-battle/ActionFigures';
-import Scorecard from '../../components/boss-battle/Scorecard';
+import { useEvent } from '../../context/EventContext';
+import { useBossBattleSync } from '../../hooks/useBossBattleSync';
+import BossBattleRaid from '../../components/boss-battle/BossBattleRaid';
 
 export default function BossBattleView() {
-  const { gameState } = useGlobalGameState();
-  const { teams } = useLeaderboardContext();
+  const { eventId } = useEvent();
+  const battleData = useBossBattleSync(eventId);
 
-  // Sync Firebase state with game adapter whenever either changes
-  useEffect(() => {
-    if (gameState) {
-      gameStateAdapter.setGameState(gameState, teams);
-    }
-  }, [gameState, teams]);
-
-  if (!gameState) {
+  if (!eventId) {
     return (
       <div className="p-8 max-w-md">
         <h2 className="font-orbitron text-2xl text-[var(--neon-red)] mb-6">BOSS BATTLE</h2>
@@ -34,36 +23,27 @@ export default function BossBattleView() {
 
   return (
     <div
-      className="App w-full h-full"
-      data-testid="app-container"
+      className="w-full h-full"
+      data-testid="boss-battle-container"
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
         overflow: 'hidden',
-        background: '#050505'
       }}
     >
-      {/* Phaser Game Canvas Layer */}
-      <GameManager />
-
-      {/* React UI Overlay Layer */}
-      <div
-        className="absolute inset-0 z-10 flex flex-col justify-between"
-        style={{ pointerEvents: 'none' }}
-      >
-        {/* Top UI Elements */}
-        <div>
-          <HealthBar />
-          <Leaderboard />
-        </div>
-
-        {/* Bottom UI Elements */}
-        <ActionFigures />
-      </div>
-
-      {/* Scorecard Overlay */}
-      <Scorecard />
+      <BossBattleRaid
+        players={battleData.players}
+        damages={battleData.damages}
+        bossHealth={battleData.bossHealth}
+        bossMaxHealth={battleData.bossMaxHealth}
+        combatLog={battleData.combatLog}
+        phase={battleData.phase}
+        isGameOver={battleData.isGameOver}
+        mvpPlayer={battleData.mvpPlayer}
+        gameOutcome={battleData.gameOutcome}
+        lowHp={battleData.lowHp}
+      />
     </div>
   );
 }
