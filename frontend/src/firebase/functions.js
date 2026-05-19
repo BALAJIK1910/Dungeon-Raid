@@ -31,7 +31,7 @@ export const registerTeam = async (data) => {
 
   try {
     console.log('🔍 Looking for event with join_code:', joinCode);
-    
+
     // Find event by join_code
     const eventsRef = collection(db, 'events');
     const q = query(eventsRef, where('join_code', '==', joinCode));
@@ -73,7 +73,7 @@ export const registerTeam = async (data) => {
     // Generate team ID
     const teamId = 'team_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     console.log('✅ Creating team with ID:', teamId);
-    
+
     // Create team document
     const teamRef = doc(db, 'events', eventId, 'teams', teamId);
     const teamData = {
@@ -94,7 +94,7 @@ export const registerTeam = async (data) => {
     console.log('✅ Team document created');
 
     console.log('✅ Team registration complete');
-    
+
     return {
       data: {
         eventId,
@@ -191,22 +191,27 @@ export const submitAnswer = async (data) => {
   }
 
   try {
-    const puzzleOrderSnapshot = await getDocs(
-      query(collection(db, 'events', eventId, 'puzzle_pool'), orderBy('sequence_order', 'asc'))
-    );
-    const puzzleOrder = puzzleOrderSnapshot.docs.map((snapshot) => ({
-      puzzleId: snapshot.id,
-      ...snapshot.data(),
-    }));
+    // Use cached puzzle order if available, otherwise fetch
+    let puzzleOrder = sessionStorage.getItem('tw_puzzleOrder');
+    if (!puzzleOrder) {
+      const puzzleOrderSnapshot = await getDocs(
+        query(collection(db, 'events', eventId, 'puzzle_pool'), orderBy('sequence_order', 'asc'))
+      );
+      puzzleOrder = puzzleOrderSnapshot.docs.map((snapshot) => ({
+        puzzleId: snapshot.id,
+        ...snapshot.data(),
+      }));
+      sessionStorage.setItem('tw_puzzleOrder', JSON.stringify(puzzleOrder));
+    } else {
+      puzzleOrder = JSON.parse(puzzleOrder);
+    }
 
     const result = await runTransaction(db, async (transaction) => {
       const eventRef = doc(db, 'events', eventId);
-      const legacyStateRef = doc(db, 'events', eventId, 'global_state', 'state');
       const teamRef = doc(db, 'events', eventId, 'teams', teamId);
       const puzzleRef = doc(db, 'events', eventId, 'puzzle_pool', puzzleId);
 
       const eventSnap = await transaction.get(eventRef);
-      const legacyStateSnap = await transaction.get(legacyStateRef);
       const teamSnap = await transaction.get(teamRef);
       const puzzleSnap = await transaction.get(puzzleRef);
 
@@ -214,10 +219,7 @@ export const submitAnswer = async (data) => {
         throw new Error('EVENT_NOT_FOUND');
       }
 
-      const gameState = {
-        ...(legacyStateSnap.exists() ? legacyStateSnap.data() : {}),
-        ...eventSnap.data(),
-      };
+      const gameState = eventSnap.data();
 
       if (gameState.game_status !== 'ACTIVE') {
         throw new Error(gameState.game_status === 'PENDING' ? 'GAME_PENDING' : 'GAME_NOT_ACTIVE');
@@ -242,13 +244,6 @@ export const submitAnswer = async (data) => {
       const team = teamSnap.data();
       const puzzle = puzzleSnap.data();
 
-      if (team.submission_cooldown_expiry && team.submission_cooldown_expiry > now) {
-        return {
-          status: 'WRONG',
-          message: 'Submission cooldown active',
-          cooldown_seconds: Math.ceil((team.submission_cooldown_expiry - now) / 1000),
-        };
-      }
 
       const correct = checkAnswer(
         answerText,
@@ -257,26 +252,9 @@ export const submitAnswer = async (data) => {
       );
 
       if (!correct) {
-        const strikeCount = (team.cooldown_strike_count || 0) + 1;
-        const cooldownSeconds = calculateCooldown(strikeCount);
-        const teamUpdate = {
-          cooldown_strike_count: strikeCount,
-          submission_cooldown_expiry: now + cooldownSeconds * 1000,
-        };
-
-        if (team.shield_active) {
-          teamUpdate.shield_active = false;
-          teamUpdate.submission_cooldown_expiry = 0;
-        }
-
-        transaction.update(teamRef, teamUpdate);
-
         return {
           status: 'WRONG',
-          message: team.shield_active ? 'Shield absorbed the penalty!' : 'Incorrect answer',
-          shield_used: !!team.shield_active,
-          cooldown_seconds: team.shield_active ? 0 : cooldownSeconds,
-          strike_count: strikeCount,
+          message: 'Incorrect answer',
         };
       }
 
@@ -288,16 +266,16 @@ export const submitAnswer = async (data) => {
         damage *= 2;
       }
 
-      const newBossHp = Math.max(0, (gameState.boss_current_hp || 0) - damage);
-      const bossDefeated = newBossHp <= 0;
       const currentPuzzleIndex = puzzleOrder.findIndex(
         (orderedPuzzle) => orderedPuzzle.puzzleId === puzzleId
       );
-      const fallbackNextPuzzle = puzzleOrder.find((orderedPuzzle) => {
-        return (Number(orderedPuzzle.sequence_order) || 0) > (Number(puzzle.sequence_order) || 0);
-      });
       const nextPuzzle =
-        currentPuzzleIndex >= 0 ? puzzleOrder[currentPuzzleIndex + 1] : fallbackNextPuzzle;
+        currentPuzzleIndex >= 0 && currentPuzzleIndex < puzzleOrder.length - 1
+          ? puzzleOrder[currentPuzzleIndex + 1]
+          : null;
+
+      const newBossHp = Math.max(0, (gameState.boss_current_hp || 0) - damage);
+      const bossDefeated = newBossHp <= 0;
       const questionsExhausted = !nextPuzzle;
       const gameConcluded = bossDefeated || questionsExhausted;
       const gameOutcome = bossDefeated ? 'WON' : questionsExhausted ? 'LOST' : null;
@@ -351,7 +329,6 @@ export const submitAnswer = async (data) => {
       };
 
       transaction.update(eventRef, gameUpdate);
-      transaction.set(legacyStateRef, { ...gameState, ...gameUpdate }, { merge: true });
       transaction.update(teamRef, teamUpdate);
       transaction.update(puzzleRef, {
         status: 'SOLVED',
@@ -400,7 +377,7 @@ export const activatePowerup = httpsCallable(functions, 'activatePowerup');
  */
 export const organiserControl = async (data) => {
   const { eventId, action } = data;
-  
+
   if (!eventId || !action) {
     throw new Error('Missing eventId or action');
   }
@@ -430,14 +407,14 @@ export const organiserControl = async (data) => {
         const puzzlePoolRef = collection(db, 'events', eventId, 'puzzle_pool');
         const puzzleQuery = query(puzzlePoolRef, orderBy('sequence_order', 'asc'), limit(1));
         const puzzleSnapshot = await getDocs(puzzleQuery);
-        
+
         if (puzzleSnapshot.empty) {
           throw new Error('No puzzles in puzzle_pool');
         }
-        
+
         const firstPuzzle = puzzleSnapshot.docs[0];
         const activePuzzleId = firstPuzzle.id;
-        
+
         update.game_status = 'ACTIVE';
         update.active_puzzle_status = 'PLAYING';
         update.active_puzzle_id = activePuzzleId;
@@ -473,11 +450,11 @@ export const organiserControl = async (data) => {
           currentIndex >= 0
             ? orderedPuzzles[currentIndex + 1]
             : orderedPuzzles.find((puzzle) => {
-                return (
-                  (Number(puzzle.sequence_order) || 0) >
-                  (Number(eventData.active_puzzle_index) || 0)
-                );
-              });
+              return (
+                (Number(puzzle.sequence_order) || 0) >
+                (Number(eventData.active_puzzle_index) || 0)
+              );
+            });
 
         if (nextPuzzle) {
           update.active_puzzle_id = nextPuzzle.puzzleId;

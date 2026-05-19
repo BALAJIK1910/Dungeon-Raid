@@ -49,6 +49,11 @@ exports.submitAnswer = functions.https.onCall(async (data, context) => {
         const teamId = context.auth.token.teamId;
         const submittedAt = Date.now();
 
+        // Fetch puzzle order once, outside transaction (read-only, non-critical timing)
+        const puzzleOrderSnapshot = await db.collection('events').doc(eventId).collection('puzzle_pool')
+            .orderBy('sequence_order', 'asc').get();
+        const puzzleOrder = puzzleOrderSnapshot.docs.map(doc => doc.id);
+
         // Run atomic transaction
         const result = await db.runTransaction(async (transaction) => {
             // 1. Get event and verify it exists + status
@@ -230,27 +235,6 @@ exports.submitAnswer = functions.https.onCall(async (data, context) => {
                 submission_cooldown_expiry: null,
             });
 
-            // Write battle log entry
-            const logId = generateId();
-            const logData = {
-                log_id: logId,
-                timestamp: admin.firestore.Timestamp.now(),
-                event_type: 'PUZZLE_SOLVED',
-                team_name: team.team_name,
-                team_id: teamId,
-                puzzle_id: puzzleId,
-                damage_dealt: damage,
-                boss_hp_after: newBossHp,
-                time_bonus_applied: timeBonusApplied,
-                double_damage_applied: hasDoubleDamage,
-                message: `${team.team_name} dealt ${damage} damage! Boss HP: ${newBossHp}/${globalState.boss_max_hp}`,
-            };
-
-            transaction.set(
-                db.collection('events').doc(eventId).collection('battle_log').doc(logId),
-                logData
-            );
-
             return {
                 status: 'CORRECT',
                 damage_dealt: damage,
@@ -260,8 +244,33 @@ exports.submitAnswer = functions.https.onCall(async (data, context) => {
                 game_outcome: globalStateUpdate.game_outcome || null,
                 time_bonus_applied: timeBonusApplied,
                 double_damage_applied: hasDoubleDamage,
+                teamName: team.team_name,
+                bossMaxHp: globalState.boss_max_hp,
             };
         });
+
+        // Write battle log asynchronously (fire-and-forget after transaction completes)
+        if (result.status === 'CORRECT') {
+            const logId = generateId();
+            const logData = {
+                log_id: logId,
+                timestamp: admin.firestore.Timestamp.now(),
+                event_type: 'PUZZLE_SOLVED',
+                team_name: result.teamName,
+                team_id: teamId,
+                puzzle_id: puzzleId,
+                damage_dealt: result.damage_dealt,
+                boss_hp_after: result.new_boss_hp,
+                time_bonus_applied: result.time_bonus_applied,
+                double_damage_applied: result.double_damage_applied,
+                message: `${result.teamName} dealt ${result.damage_dealt} damage! Boss HP: ${result.new_boss_hp}/${result.bossMaxHp}`,
+            };
+
+            // Write battle log without awaiting (fire-and-forget)
+            db.collection('events').doc(eventId).collection('battle_log').doc(logId).set(logData).catch(err => {
+                console.error('Failed to write battle log:', err);
+            });
+        }
 
         return result;
     } catch (error) {

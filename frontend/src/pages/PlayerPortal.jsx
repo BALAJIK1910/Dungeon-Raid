@@ -81,42 +81,6 @@ function PauseOverlay() {
 }
 
 /**
- * Cooldown overlay - team has submitted wrong answer
- */
-function CooldownOverlay({ cooldownExpiry, strikeCount }) {
-  const [remaining, setRemaining] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRemaining(getTimeRemaining(cooldownExpiry));
-    }, 100);
-    return () => clearInterval(interval);
-  }, [cooldownExpiry]);
-
-  return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-40">
-      <HudPanel className="text-center max-w-md p-8">
-        <div className="font-orbitron text-4xl text-[var(--neon-red)] mb-4 animate-pulse">
-          ⚠
-        </div>
-        <h2 className="font-orbitron text-2xl text-[var(--neon-red)] mb-2">
-          STRIKE {strikeCount}
-        </h2>
-        <p className="font-rajdhani text-[var(--text-secondary)] mb-6">
-          SYSTEM LOCK ACTIVE — RECHARGE IN
-        </p>
-        <div className="font-orbitron text-5xl text-[var(--neon-red)] tracking-widest mb-4">
-          {msToMMSS(remaining)}
-        </div>
-        <p className="font-mono text-xs text-[var(--text-muted)]">
-          PENALTY MULTIPLIER APPLIED
-        </p>
-      </HudPanel>
-    </div>
-  );
-}
-
-/**
  * Intermission overlay - between puzzles
  */
 function IntermissionOverlay({ intermissionExpiry, lastSolvedBy }) {
@@ -354,7 +318,7 @@ export default function PlayerPortal() {
         setSubmitMessage(`✓ CRITICAL HIT: +${result.data.damage_dealt} DMG`);
         setTimeout(() => setSubmitMessage(''), 3000);
       } else if (status === 'WRONG') {
-        setSubmitError(`✗ INCORRECT — COOLDOWN ${result.data.cooldown_seconds}s`);
+        setSubmitError('✗ INCORRECT — TRY AGAIN');
       } else if (status === 'TOO_LATE') {
         setSubmitError('⏱ TOO LATE — ANOTHER OPERATIVE STRUCK FIRST');
       } else {
@@ -382,10 +346,6 @@ export default function PlayerPortal() {
   }
 
   // Main game view (ACTIVE)
-  const isCooldownActive =
-    teamState?.submission_cooldown_expiry &&
-    getTimeRemaining(teamState.submission_cooldown_expiry) > 0;
-
   const isIntermission =
     gameState.active_puzzle_status === 'INTERMISSION' &&
     getTimeRemaining(gameState.intermission_until) > 0;
@@ -415,13 +375,6 @@ export default function PlayerPortal() {
             <IntermissionOverlay
               intermissionExpiry={gameState.intermission_until}
               lastSolvedBy={gameState.last_solved_by_team}
-            />
-          )}
-
-          {isCooldownActive && (
-            <CooldownOverlay
-              cooldownExpiry={teamState.submission_cooldown_expiry}
-              strikeCount={teamState.cooldown_strike_count || 0}
             />
           )}
 
@@ -465,7 +418,7 @@ export default function PlayerPortal() {
             <AnswerInput
               puzzle={puzzle}
               onSubmit={handleSubmitAnswer}
-              isLoading={submitting || isIntermission || isCooldownActive}
+              isLoading={submitting || isIntermission}
             />
           </div>
         </main>
