@@ -430,6 +430,9 @@ export const organiserControl = async (data) => {
       case 'RESUME':
         update.game_status = 'ACTIVE';
         update.resumed_at = new Date().toISOString();
+        if (eventData.active_puzzle_id) {
+          update.active_puzzle_status = 'PLAYING';
+        }
         break;
       case 'INSTANT_KILL':
         update.boss_current_hp = 0;
