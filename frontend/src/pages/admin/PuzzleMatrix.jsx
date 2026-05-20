@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, deleteDoc, doc, setDoc } from 'firebase/firestore';
-import { Plus, Save, Trash2 } from 'lucide-react';
+import { collection, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { Plus, Save, Trash2, X } from 'lucide-react';
 import { useEvent } from '../../context';
 import { usePuzzlePool } from '../../hooks';
 import { db } from '../../firebase/config';
@@ -48,6 +48,8 @@ export default function PuzzleMatrix() {
   const [form, setForm] = useState(emptyPuzzle);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   const nextSequence = useMemo(() => {
     const maxSequence = puzzles.reduce(
@@ -126,6 +128,66 @@ export default function PuzzleMatrix() {
     } catch (err) {
       console.error('Puzzle delete error:', err);
       setMessage(`Delete failed: ${err.message}`);
+    }
+  };
+
+  const startEditPuzzle = (puzzle) => {
+    setEditingId(puzzle.puzzleId);
+    setEditForm({
+      sequence_order: puzzle.sequence_order,
+      question_type: puzzle.question_type,
+      question_payload: puzzle.question_payload,
+      correct_answer: puzzle.correct_answer,
+      answer_aliases: Array.isArray(puzzle.answer_aliases)
+        ? puzzle.answer_aliases.join('\n')
+        : puzzle.answer_aliases || '',
+      fixed_damage_value: puzzle.fixed_damage_value,
+      hint_text: puzzle.hint_text,
+      hint_damage_penalty: puzzle.hint_damage_penalty,
+      time_bonus_enabled: puzzle.time_bonus_enabled,
+      time_bonus_window_seconds: puzzle.time_bonus_window_seconds,
+      time_bonus_damage: puzzle.time_bonus_damage,
+    });
+  };
+
+  const cancelEditPuzzle = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  const handleUpdatePuzzle = async (puzzleId) => {
+    if (!eventId || !editForm.question_payload?.trim() || !editForm.correct_answer?.trim()) {
+      setMessage('Question and answer are required.');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+
+    try {
+      const puzzleRef = doc(db, 'events', eventId, 'puzzle_pool', puzzleId);
+      const updateData = {
+        sequence_order: Number(editForm.sequence_order) || 1,
+        question_type: editForm.question_type,
+        question_payload: editForm.question_payload.trim(),
+        correct_answer: editForm.correct_answer.trim(),
+        answer_aliases: splitAliases(editForm.answer_aliases),
+        fixed_damage_value: Number(editForm.fixed_damage_value) || 100,
+        hint_text: editForm.hint_text.trim(),
+        hint_damage_penalty: Number(editForm.hint_damage_penalty) || 0,
+        time_bonus_enabled: editForm.time_bonus_enabled,
+        time_bonus_window_seconds: Number(editForm.time_bonus_window_seconds) || 30,
+        time_bonus_damage: Number(editForm.time_bonus_damage) || 0,
+      };
+
+      await updateDoc(puzzleRef, updateData);
+      setMessage(`Puzzle updated.`);
+      cancelEditPuzzle();
+    } catch (err) {
+      console.error('Puzzle update error:', err);
+      setMessage(`Update failed: ${err.message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -281,56 +343,209 @@ export default function PuzzleMatrix() {
           <p className="font-mono text-[var(--text-secondary)]">No puzzles loaded for this event.</p>
         )}
 
-        {puzzles.map((puzzle) => (
-          <div
-            key={puzzle.puzzleId}
-            className="border border-[var(--border-dim)] bg-[var(--bg-surface)] p-4"
-          >
-            <div className="flex items-start justify-between gap-4 mb-3">
-              <div>
-                <p className="font-orbitron text-[var(--neon-cyan)] text-sm">
-                  DIRECTIVE #{puzzle.sequence_order || '?'} / {puzzle.question_type || 'TEXT'}
-                </p>
-                <p className="font-mono text-xs text-[var(--text-muted)]">{puzzle.puzzleId}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleDeletePuzzle(puzzle.puzzleId)}
-                className="text-[var(--neon-red)] hover:drop-shadow-[var(--glow-red)]"
-                title="Delete puzzle"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
+        {puzzles.map((puzzle) => {
+          const isEditing = editingId === puzzle.puzzleId;
 
-            <p className="font-mono text-[var(--text-primary)] whitespace-pre-wrap mb-4">
-              {puzzle.question_payload}
-            </p>
+          if (isEditing) {
+            return (
+              <HudPanel key={puzzle.puzzleId} className="p-4">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="font-orbitron text-[var(--neon-cyan)]">
+                    EDIT DIRECTIVE #{puzzle.sequence_order}
+                  </h3>
+                  <button
+                    onClick={cancelEditPuzzle}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div>
-                <p className="font-rajdhani text-[var(--text-secondary)]">ANSWER</p>
-                <p className="font-mono text-[var(--neon-green)]">{puzzle.correct_answer}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  <Field label="Sequence">
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min="1"
+                      value={editForm.sequence_order}
+                      onChange={(e) => setEditForm({ ...editForm, sequence_order: e.target.value })}
+                    />
+                  </Field>
+
+                  <Field label="Type">
+                    <select
+                      className={inputClass}
+                      value={editForm.question_type}
+                      onChange={(e) => setEditForm({ ...editForm, question_type: e.target.value })}
+                    >
+                      <option value="TEXT">TEXT</option>
+                      <option value="CODE">CODE</option>
+                      <option value="MCQ">MCQ</option>
+                      <option value="IMAGE">IMAGE</option>
+                    </select>
+                  </Field>
+
+                  <Field label="Damage">
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min="1"
+                      value={editForm.fixed_damage_value}
+                      onChange={(e) => setEditForm({ ...editForm, fixed_damage_value: e.target.value })}
+                    />
+                  </Field>
+
+                  <Field label="Hint Penalty">
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min="0"
+                      value={editForm.hint_damage_penalty}
+                      onChange={(e) => setEditForm({ ...editForm, hint_damage_penalty: e.target.value })}
+                    />
+                  </Field>
+                </div>
+
+                <Field label="Question">
+                  <textarea
+                    className={`${inputClass} min-h-[100px] resize-y`}
+                    value={editForm.question_payload}
+                    onChange={(e) => setEditForm({ ...editForm, question_payload: e.target.value })}
+                  />
+                </Field>
+
+                <Field label="Correct Answer">
+                  <input
+                    className={inputClass}
+                    value={editForm.correct_answer}
+                    onChange={(e) => setEditForm({ ...editForm, correct_answer: e.target.value })}
+                  />
+                </Field>
+
+                <Field label="Answer Aliases">
+                  <textarea
+                    className={`${inputClass} min-h-[100px] resize-y`}
+                    value={editForm.answer_aliases}
+                    onChange={(e) => setEditForm({ ...editForm, answer_aliases: e.target.value })}
+                  />
+                </Field>
+
+                <Field label="Hint Text">
+                  <textarea
+                    className={`${inputClass} min-h-[100px] resize-y`}
+                    value={editForm.hint_text}
+                    onChange={(e) => setEditForm({ ...editForm, hint_text: e.target.value })}
+                  />
+                </Field>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <label className="flex items-center gap-3 border border-[var(--border-dim)] bg-[var(--bg-deep)] px-3 py-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.time_bonus_enabled}
+                      onChange={(e) => setEditForm({ ...editForm, time_bonus_enabled: e.target.checked })}
+                    />
+                    <span className="font-rajdhani font-semibold text-[var(--text-primary)]">TIME BONUS</span>
+                  </label>
+
+                  <Field label="Bonus Window">
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min="1"
+                      value={editForm.time_bonus_window_seconds}
+                      onChange={(e) => setEditForm({ ...editForm, time_bonus_window_seconds: e.target.value })}
+                    />
+                  </Field>
+
+                  <Field label="Bonus Damage">
+                    <input
+                      className={inputClass}
+                      type="number"
+                      min="0"
+                      value={editForm.time_bonus_damage}
+                      onChange={(e) => setEditForm({ ...editForm, time_bonus_damage: e.target.value })}
+                    />
+                  </Field>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <HudButton
+                    onClick={() => handleUpdatePuzzle(puzzle.puzzleId)}
+                    variant="success"
+                    disabled={saving}
+                    className="flex items-center gap-2"
+                  >
+                    <Save size={16} /> {saving ? 'SAVING' : 'SAVE CHANGES'}
+                  </HudButton>
+                  <HudButton
+                    onClick={cancelEditPuzzle}
+                    variant="default"
+                    disabled={saving}
+                  >
+                    CANCEL
+                  </HudButton>
+                  {message && <p className="font-mono text-sm text-[var(--neon-amber)]">{message}</p>}
+                </div>
+              </HudPanel>
+            );
+          }
+
+          return (
+            <div
+              key={puzzle.puzzleId}
+              className="border border-[var(--border-dim)] bg-[var(--bg-surface)] p-4 hover:border-[var(--neon-cyan)] transition-colors cursor-pointer"
+              onClick={() => startEditPuzzle(puzzle)}
+            >
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <p className="font-orbitron text-[var(--neon-cyan)] text-sm">
+                    DIRECTIVE #{puzzle.sequence_order || '?'} / {puzzle.question_type || 'TEXT'}
+                  </p>
+                  <p className="font-mono text-xs text-[var(--text-muted)]">{puzzle.puzzleId}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePuzzle(puzzle.puzzleId);
+                  }}
+                  className="text-[var(--neon-red)] hover:drop-shadow-[var(--glow-red)]"
+                  title="Delete puzzle"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
-              <div>
-                <p className="font-rajdhani text-[var(--text-secondary)]">DAMAGE</p>
-                <p className="font-mono text-[var(--text-primary)]">{puzzle.fixed_damage_value || 0}</p>
-              </div>
-              <div>
-                <p className="font-rajdhani text-[var(--text-secondary)]">ALIASES</p>
-                <p className="font-mono text-[var(--text-primary)]">
-                  {(puzzle.answer_aliases || []).length}
-                </p>
-              </div>
-              <div>
-                <p className="font-rajdhani text-[var(--text-secondary)]">BONUS</p>
-                <p className="font-mono text-[var(--text-primary)]">
-                  {puzzle.time_bonus_enabled ? `${puzzle.time_bonus_damage || 0}` : 'OFF'}
-                </p>
+
+              <p className="font-mono text-[var(--text-primary)] whitespace-pre-wrap mb-4">
+                {puzzle.question_payload}
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p className="font-rajdhani text-[var(--text-secondary)]">ANSWER</p>
+                  <p className="font-mono text-[var(--neon-green)]">{puzzle.correct_answer}</p>
+                </div>
+                <div>
+                  <p className="font-rajdhani text-[var(--text-secondary)]">DAMAGE</p>
+                  <p className="font-mono text-[var(--text-primary)]">{puzzle.fixed_damage_value || 0}</p>
+                </div>
+                <div>
+                  <p className="font-rajdhani text-[var(--text-secondary)]">ALIASES</p>
+                  <p className="font-mono text-[var(--text-primary)]">
+                    {(puzzle.answer_aliases || []).length}
+                  </p>
+                </div>
+                <div>
+                  <p className="font-rajdhani text-[var(--text-secondary)]">BONUS</p>
+                  <p className="font-mono text-[var(--text-primary)]">
+                    {puzzle.time_bonus_enabled ? `${puzzle.time_bonus_damage || 0}` : 'OFF'}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
