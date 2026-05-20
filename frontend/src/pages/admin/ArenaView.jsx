@@ -10,20 +10,17 @@ import HudButton from '../../components/layout/HudButton';
  */
 export default function ArenaView() {
   const { eventId: contextEventId, setEventId } = useEvent();
-  const [inputEventId, setInputEventId] = useState('');
   const [selectedEventId, setSelectedEventId] = useState(contextEventId);
-  
+
   // Update when context changes
   useEffect(() => {
     if (contextEventId) {
       setSelectedEventId(contextEventId);
-      setInputEventId(contextEventId);
     } else {
       // Try to get from sessionStorage
       const stored = sessionStorage.getItem('tw_eventId');
       if (stored) {
         setSelectedEventId(stored);
-        setInputEventId(stored);
       }
     }
   }, [contextEventId]);
@@ -34,15 +31,6 @@ export default function ArenaView() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-
-  const handleSetEventId = () => {
-    const nextEventId = inputEventId.trim();
-
-    if (nextEventId) {
-      setSelectedEventId(nextEventId);
-      setEventId(nextEventId);
-    }
-  };
 
   const handleControl = async (action) => {
     setLoading(true);
@@ -64,34 +52,17 @@ export default function ArenaView() {
     }
   };
 
-  // Show event selector if no event selected
+  // Show message if no event selected
   if (!selectedEventId) {
     return (
       <div className="p-8 max-w-md">
-        <h2 className="font-orbitron text-2xl text-[var(--neon-cyan)] mb-6">SELECT EVENT</h2>
+        <h2 className="font-orbitron text-2xl text-[var(--neon-cyan)] mb-6">NO EVENT SELECTED</h2>
         <HudPanel className="p-6">
-          <div className="mb-4">
-            <label className="font-rajdhani text-[var(--text-secondary)] block mb-2">
-              Event ID:
-            </label>
-            <input
-              type="text"
-              value={inputEventId}
-              onChange={(e) => setInputEventId(e.target.value)}
-              placeholder="e.g., test_event_1"
-              className="w-full px-4 py-2 bg-[var(--bg-raised)] border border-[var(--neon-cyan)] text-[var(--text-primary)] font-mono rounded focus:outline-none focus:border-[var(--neon-cyan)]/50"
-              onKeyPress={(e) => e.key === 'Enter' && handleSetEventId()}
-            />
-          </div>
-          <button
-            onClick={handleSetEventId}
-            disabled={!inputEventId.trim()}
-            className="w-full px-4 py-2 bg-[var(--neon-cyan)] text-[var(--bg-deep)] font-rajdhani font-bold rounded hover:bg-[var(--neon-cyan)]/80 disabled:opacity-50 transition-colors"
-          >
-            LOAD EVENT
-          </button>
-          <p className="font-mono text-xs text-[var(--text-tertiary)] mt-4">
-            Enter the event ID from your Firestore database (e.g., test_event_1)
+          <p className="font-rajdhani text-[var(--text-secondary)] mb-4">
+            Please select an event from the Event Genesis page to begin.
+          </p>
+          <p className="font-mono text-xs text-[var(--text-muted)]">
+            Navigate to Event Genesis, select an event from the Recent Events section, and try again.
           </p>
         </HudPanel>
       </div>
@@ -110,7 +81,6 @@ export default function ArenaView() {
         <button
           onClick={() => {
             setSelectedEventId('');
-            setInputEventId('');
             setEventId(null);
           }}
           className="px-4 py-2 bg-[var(--neon-red)] text-white font-rajdhani rounded hover:bg-[var(--neon-red)]/80"

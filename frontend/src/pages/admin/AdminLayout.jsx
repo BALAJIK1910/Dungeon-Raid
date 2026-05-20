@@ -7,6 +7,7 @@ import ArenaView from './ArenaView';
 import PuzzleMatrix from './PuzzleMatrix';
 import TeamAnalytics from './TeamAnalytics';
 import BossBattleView from './BossBattleView';
+import EventCreator from './EventCreator';
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -85,27 +86,31 @@ const AdminLayout = () => {
           <h1 className="font-orbitron font-bold text-[var(--neon-cyan)] text-lg">ADMIN.SYS</h1>
         </div>
         <div className="flex flex-col flex-1 mt-4">
-          <NavLink to="/admin/arena" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+          <NavLink to="/admin/create-event" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-green)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+            ⚡ Create Event
+          </NavLink>
+          <NavLink to="/admin/arena" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⬡ Arena View
           </NavLink>
-          <NavLink to="/admin/puzzles" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+          <NavLink to="/admin/puzzles" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⬡ Puzzle Matrix
           </NavLink>
-          <NavLink to="/admin/analytics" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+          <NavLink to="/admin/analytics" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⬡ Team Analytics
           </NavLink>
-          <NavLink to="/admin/boss" className={({isActive}) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-amber)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
+          <NavLink to="/admin/boss" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-amber)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
             ⚔ Boss Battle
           </NavLink>
         </div>
       </nav>
       <main className="flex-1 h-full overflow-auto bg-[var(--bg-void)] flex flex-col">
         <Routes>
+          <Route path="create-event" element={<EventCreator />} />
           <Route path="arena" element={<ArenaView />} />
           <Route path="puzzles" element={<PuzzleMatrix />} />
           <Route path="analytics" element={<TeamAnalytics />} />
           <Route path="boss" element={<BossBattleView />} />
-          <Route path="*" element={<Navigate to="/admin/arena" replace />} />
+          <Route path="*" element={<Navigate to="/admin/create-event" replace />} />
         </Routes>
       </main>
     </div>
