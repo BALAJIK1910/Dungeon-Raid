@@ -36,6 +36,8 @@ function BossRaidPage({
   gameStartedAt = null,
   gamePausedAt = null,
   gameResumedAt = null,
+  concludedAt = null,
+  totalPausedDurationMs = 0,
 }) {
   const [floats, setFloats] = useState([]);
   const [hitKey, setHitKey] = useState(0);
@@ -140,82 +142,48 @@ function BossRaidPage({
     [damages],
   );
 
-  // Calculate elapsed time:
-  // - Only count time if game is ACTIVE
-  // - Pause: stop counting, freeze at paused time
-  // - Resume: continue from paused time
-  // - Stop counting when game is CONCLUDED (isGameOver)
-  let elapsedSec = 1;
-  
-  if (gameStatus === 'ACTIVE' && gameStartedAt) {
-    // Game is running - count time from gameStartedAt to now
-    const startTime = typeof gameStartedAt === 'string' 
-      ? new Date(gameStartedAt).getTime() 
-      : gameStartedAt;
-    
-    // If game has been resumed, we need to account for the pause duration
-    if (gameResumedAt) {
-      // Game was paused and then resumed
-      // Elapsed = (pausedTime - startTime) + (now - resumedTime)
-      const pausedTime = typeof gamePausedAt === 'string'
-        ? new Date(gamePausedAt).getTime()
-        : gamePausedAt;
-      const resumedTime = typeof gameResumedAt === 'string'
-        ? new Date(gameResumedAt).getTime()
-        : gameResumedAt;
-      
-      const timeBefoPause = pausedTime - startTime;
-      const timeAfterResume = now - resumedTime;
-      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
-    } else {
-      // Game hasn't been paused yet
-      elapsedSec = Math.max(1, Math.floor((now - startTime) / 1000));
-    }
-  } else if (gameStatus === 'PAUSED' && gameStartedAt && gamePausedAt) {
-    // Game is paused - show elapsed time at pause moment (don't continue counting)
-    const startTime = typeof gameStartedAt === 'string'
-      ? new Date(gameStartedAt).getTime()
-      : gameStartedAt;
-    const pausedTime = typeof gamePausedAt === 'string'
-      ? new Date(gamePausedAt).getTime()
-      : gamePausedAt;
-    
-    if (gameResumedAt) {
-      // Was paused, then resumed, now paused again - this shouldn't happen but handle it
-      const resumedTime = typeof gameResumedAt === 'string'
-        ? new Date(gameResumedAt).getTime()
-        : gameResumedAt;
-      const timeBefoPause = resumedTime - startTime;
-      const timeAfterResume = pausedTime - resumedTime;
-      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
-    } else {
-      // First pause
-      elapsedSec = Math.max(1, Math.floor((pausedTime - startTime) / 1000));
-    }
-  } else if (isGameOver && gameStartedAt) {
-    // Game is over - show the final elapsed time (don't continue counting)
-    const startTime = typeof gameStartedAt === 'string'
-      ? new Date(gameStartedAt).getTime()
-      : gameStartedAt;
-    
-    if (gameResumedAt && gamePausedAt) {
-      // Game had pause/resume cycle(s) before concluding
-      const pausedTime = typeof gamePausedAt === 'string'
-        ? new Date(gamePausedAt).getTime()
-        : gamePausedAt;
-      const resumedTime = typeof gameResumedAt === 'string'
-        ? new Date(gameResumedAt).getTime()
-        : gameResumedAt;
-      const timeBefoPause = pausedTime - startTime;
-      const timeAfterResume = now - resumedTime;
-      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
-    } else {
-      // No pause/resume, just from start to now
-      elapsedSec = Math.max(1, Math.floor((now - startTime) / 1000));
-    }
+  // Safe parser to convert any date or timestamp format to millisecond Unix epoch
+  const parseToMillis = (ts) => {
+    if (!ts) return null;
+    if (typeof ts === 'number') return ts;
+    if (typeof ts === 'string') return new Date(ts).getTime();
+    if (typeof ts.toMillis === 'function') return ts.toMillis();
+    if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+    if (ts.seconds !== undefined) return ts.seconds * 1000;
+    return null;
+  };
+
+  const startedAt = parseToMillis(gameStartedAt);
+  const pausedAt = parseToMillis(gamePausedAt);
+  const resumedAt = parseToMillis(gameResumedAt);
+  const concludedAtTime = parseToMillis(concludedAt);
+
+  // Calculate elapsed time precisely:
+  // - PENDING: timer is frozen at 0
+  // - PAUSED: timer is frozen at the moment of the pause
+  // - CONCLUDED: timer is frozen at the moment of conclusion
+  // - ACTIVE: timer counts up, subtracting any cumulative pause durations
+  let accumulatedPauseMs = totalPausedDurationMs || 0;
+  if (!totalPausedDurationMs && pausedAt && resumedAt && resumedAt > pausedAt) {
+    // Backward-compatible fallback for a single pause/resume cycle
+    accumulatedPauseMs = resumedAt - pausedAt;
   }
-  
-  const partyDps = Math.floor(totalDamage / elapsedSec);
+
+  let elapsedSec = 0;
+
+  if (gameStatus === 'PENDING') {
+    elapsedSec = 0;
+  } else if (gameStatus === 'PAUSED' && startedAt && pausedAt) {
+    elapsedSec = Math.max(0, Math.floor((pausedAt - startedAt - accumulatedPauseMs) / 1000));
+  } else if (gameStatus === 'CONCLUDED' && startedAt) {
+    const endLimit = concludedAtTime || pausedAt || now;
+    elapsedSec = Math.max(0, Math.floor((endLimit - startedAt - accumulatedPauseMs) / 1000));
+  } else if (startedAt) {
+    // Game is ACTIVE or fallback
+    elapsedSec = Math.max(0, Math.floor((now - startedAt - accumulatedPauseMs) / 1000));
+  }
+
+  const partyDps = elapsedSec > 0 ? Math.floor(totalDamage / elapsedSec) : 0;
   const hpRatio = bossHealth / bossMaxHealth;
 
   const toggleSound = () => {
@@ -225,7 +193,7 @@ function BossRaidPage({
   };
 
   return (
-    <main className={`relative h-screen w-screen overflow-hidden text-foreground ${shake}`}>
+    <main className={`relative h-full w-full overflow-hidden text-foreground ${shake}`}>
       {/* Background */}
       <div
         aria-hidden

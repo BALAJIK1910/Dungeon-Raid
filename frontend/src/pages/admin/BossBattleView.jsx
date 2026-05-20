@@ -47,6 +47,8 @@ export default function BossBattleView() {
         gameStartedAt={battleData.gameStartedAt}
         gamePausedAt={battleData.gamePausedAt}
         gameResumedAt={battleData.gameResumedAt}
+        concludedAt={battleData.concludedAt}
+        totalPausedDurationMs={battleData.totalPausedDurationMs}
       />
     </div>
   );

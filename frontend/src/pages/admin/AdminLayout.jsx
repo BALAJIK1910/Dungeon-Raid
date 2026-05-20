@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context';
 import { useAdminGuard } from '../../hooks';
@@ -8,6 +8,8 @@ import PuzzleMatrix from './PuzzleMatrix';
 import TeamAnalytics from './TeamAnalytics';
 import BossBattleView from './BossBattleView';
 import EventCreator from './EventCreator';
+import Sidebar from '../../components/layout/Sidebar';
+
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -80,29 +82,11 @@ const AdminLayout = () => {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      <nav className="w-[220px] bg-[var(--bg-deep)] border-r border-[var(--border-dim)] flex flex-col h-full flex-shrink-0">
-        <div className="p-6">
-          <h1 className="font-orbitron font-bold text-[var(--neon-cyan)] text-lg">ADMIN.SYS</h1>
-        </div>
-        <div className="flex flex-col flex-1 mt-4">
-          <NavLink to="/admin/create-event" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-green)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
-            ⚡ Create Event
-          </NavLink>
-          <NavLink to="/admin/arena" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
-            ⬡ Arena View
-          </NavLink>
-          <NavLink to="/admin/puzzles" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
-            ⬡ Puzzle Matrix
-          </NavLink>
-          <NavLink to="/admin/analytics" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-cyan)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
-            ⬡ Team Analytics
-          </NavLink>
-          <NavLink to="/admin/boss" className={({ isActive }) => `px-6 py-3 font-rajdhani font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-raised)] border-l-4 transition-colors ${isActive ? 'border-[var(--neon-amber)] bg-[var(--bg-raised)]' : 'border-transparent'}`}>
-            ⚔ Boss Battle
-          </NavLink>
-        </div>
-      </nav>
+    <div className="h-screen flex overflow-hidden relative">
+      <Sidebar />
+      {/* Visual static spacer to reserve 80px space on the left, keeping dashboard content aligned and static while the real absolute sidebar overlays on hover */}
+      <div className="w-[80px] h-full flex-shrink-0 bg-[var(--bg-deep)] border-r border-[var(--border-dim)] pointer-events-none" />
+
       <main className="flex-1 h-full overflow-auto bg-[var(--bg-void)] flex flex-col">
         <Routes>
           <Route path="create-event" element={<EventCreator />} />

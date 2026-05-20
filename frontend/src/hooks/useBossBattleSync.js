@@ -32,18 +32,53 @@ function buildDamageRecord(leaderboard) {
   );
 }
 
-function transformBattleLog(battleLog, players) {
+function transformBattleLog(battleLog, players, gameStartedAt) {
   if (!battleLog || !players) return [];
 
-  return battleLog.slice(0, 6).map(entry => {
+  let filteredLogs = battleLog;
+  if (gameStartedAt) {
+    const startTime = typeof gameStartedAt === 'number'
+      ? gameStartedAt
+      : typeof gameStartedAt === 'string'
+      ? new Date(gameStartedAt).getTime()
+      : typeof gameStartedAt.toMillis === 'function'
+      ? gameStartedAt.toMillis()
+      : typeof gameStartedAt.toDate === 'function'
+      ? gameStartedAt.toDate().getTime()
+      : gameStartedAt.seconds !== undefined
+      ? gameStartedAt.seconds * 1000
+      : 0;
+
+    if (startTime > 0) {
+      filteredLogs = battleLog.filter(entry => {
+        const entryTime = typeof entry.timestamp === 'number'
+          ? entry.timestamp
+          : entry.timestamp?.toMillis?.() || 
+            (entry.timestamp instanceof Date ? entry.timestamp.getTime() : 
+            (typeof entry.timestamp === 'string' ? new Date(entry.timestamp).getTime() : 
+            (entry.timestamp?.seconds !== undefined ? entry.timestamp.seconds * 1000 : 0)));
+        // Buffer by up to 1 second to account for slight server/client timestamp offsets
+        return entryTime >= startTime - 1000;
+      });
+    }
+  }
+
+  return filteredLogs.slice(0, 6).map(entry => {
     const teamId = entry.teamId || entry.team_id;
     const attacker = players.find(p => p.id === teamId);
+    const entryTime = typeof entry.timestamp === 'number'
+      ? entry.timestamp
+      : entry.timestamp?.toMillis?.() || 
+        (entry.timestamp instanceof Date ? entry.timestamp.getTime() : 
+        (typeof entry.timestamp === 'string' ? new Date(entry.timestamp).getTime() : 
+        (entry.timestamp?.seconds !== undefined ? entry.timestamp.seconds * 1000 : Date.now())));
+
     return {
       id: entry.logId || entry.log_id || Math.random(),
       attacker: attacker || { name: entry.team_name, id: teamId, token: 'phantom-gold' },
       amount: entry.damage_dealt || 0,
       crit: !!(entry.double_damage_applied || entry.time_bonus_applied),
-      t: entry.timestamp?.toMillis?.() || Date.now(),
+      t: entryTime,
     };
   });
 }
@@ -59,18 +94,21 @@ export function useBossBattleSync(eventId) {
   const { teams: leaderboard } = useLeaderboard(eventId);
   const { log: battleLog } = useBattleLog(eventId);
 
+  const gameStartedAt = gameState?.started_at || gameState?.active_puzzle_started_at || null;
+
   const players = useMemo(() => transformTeamsToPlayers(leaderboard), [leaderboard]);
   const damages = useMemo(() => buildDamageRecord(leaderboard), [leaderboard]);
-  const combatLog = useMemo(() => transformBattleLog(battleLog, players), [battleLog, players]);
+  const combatLog = useMemo(() => transformBattleLog(battleLog, players, gameStartedAt), [battleLog, players, gameStartedAt]);
   const mvpPlayer = useMemo(() => getMvpPlayer(players, damages), [players, damages]);
 
   const bossHealth = gameState?.boss_current_hp ?? 0;
   const bossMaxHealth = gameState?.boss_max_hp ?? 1000000;
   const gameStatus = gameState?.game_status || 'PENDING';
   const gameOutcome = gameState?.game_outcome || null;
-  const gameStartedAt = gameState?.started_at || gameState?.active_puzzle_started_at || null;
   const gamePausedAt = gameState?.paused_at || null;
   const gameResumedAt = gameState?.resumed_at || null;
+  const concludedAt = gameState?.concluded_at || null;
+  const totalPausedDurationMs = gameState?.total_paused_duration_ms || 0;
 
   const phaseRatio = bossHealth / bossMaxHealth;
   let phase = 'Phase I — Awakening';
@@ -88,6 +126,8 @@ export function useBossBattleSync(eventId) {
     gameStartedAt,
     gamePausedAt,
     gameResumedAt,
+    concludedAt,
+    totalPausedDurationMs,
     isGameOver: gameStatus === 'CONCLUDED',
     mvpPlayer,
     phase,

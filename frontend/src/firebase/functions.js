@@ -421,6 +421,9 @@ export const organiserControl = async (data) => {
         update.active_puzzle_index = firstPuzzle.data().sequence_order || 1;
         update.started_at = new Date().toISOString();
         update.active_puzzle_started_at = Date.now();
+        update.total_paused_duration_ms = 0;
+        update.paused_at = null;
+        update.resumed_at = null;
         break;
       }
       case 'PAUSE':
@@ -433,10 +436,20 @@ export const organiserControl = async (data) => {
         if (eventData.active_puzzle_id) {
           update.active_puzzle_status = 'PLAYING';
         }
+        if (eventData.paused_at) {
+          const pauseStart = new Date(eventData.paused_at).getTime();
+          const pauseEnd = Date.now();
+          const lastPauseDuration = Math.max(0, pauseEnd - pauseStart);
+          const currentTotal = eventData.total_paused_duration_ms || 0;
+          update.total_paused_duration_ms = currentTotal + lastPauseDuration;
+        }
         break;
       case 'INSTANT_KILL':
         update.boss_current_hp = 0;
         update.game_status = 'CONCLUDED';
+        update.game_outcome = 'WON';
+        update.concluded_reason = 'BOSS_DEFEATED';
+        update.concluded_at = Date.now();
         break;
       case 'ADVANCE_PUZZLE': {
         const puzzlePoolRef = collection(db, 'events', eventId, 'puzzle_pool');
@@ -495,6 +508,10 @@ export const organiserControl = async (data) => {
         update.concluded_reason = null;
         update.concluded_at = null;
         update.active_puzzle_started_at = null;
+        update.started_at = null;
+        update.total_paused_duration_ms = 0;
+        update.paused_at = null;
+        update.resumed_at = null;
         break;
       }
     }
