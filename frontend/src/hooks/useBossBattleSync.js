@@ -68,6 +68,9 @@ export function useBossBattleSync(eventId) {
   const bossMaxHealth = gameState?.boss_max_hp ?? 1000000;
   const gameStatus = gameState?.game_status || 'PENDING';
   const gameOutcome = gameState?.game_outcome || null;
+  const gameStartedAt = gameState?.started_at || gameState?.active_puzzle_started_at || null;
+  const gamePausedAt = gameState?.paused_at || null;
+  const gameResumedAt = gameState?.resumed_at || null;
 
   const phaseRatio = bossHealth / bossMaxHealth;
   let phase = 'Phase I — Awakening';
@@ -82,6 +85,9 @@ export function useBossBattleSync(eventId) {
     combatLog,
     gameStatus,
     gameOutcome,
+    gameStartedAt,
+    gamePausedAt,
+    gameResumedAt,
     isGameOver: gameStatus === 'CONCLUDED',
     mvpPlayer,
     phase,

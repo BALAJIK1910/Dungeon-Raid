@@ -32,6 +32,10 @@ function BossRaidPage({
   mvpPlayer = null,
   gameOutcome = null,
   lowHp = false,
+  gameStatus = 'PENDING',
+  gameStartedAt = null,
+  gamePausedAt = null,
+  gameResumedAt = null,
 }) {
   const [floats, setFloats] = useState([]);
   const [hitKey, setHitKey] = useState(0);
@@ -42,7 +46,6 @@ function BossRaidPage({
   const [shake, setShake] = useState('');
   const [critFlashKey, setCritFlashKey] = useState(0);
   const [sound, setSound] = useState(false);
-  const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(Date.now());
   const floatId = useRef(0);
   const fxId = useRef(0);
@@ -137,7 +140,81 @@ function BossRaidPage({
     [damages],
   );
 
-  const elapsedSec = Math.max(1, Math.floor((now - startedAt) / 1000));
+  // Calculate elapsed time:
+  // - Only count time if game is ACTIVE
+  // - Pause: stop counting, freeze at paused time
+  // - Resume: continue from paused time
+  // - Stop counting when game is CONCLUDED (isGameOver)
+  let elapsedSec = 1;
+  
+  if (gameStatus === 'ACTIVE' && gameStartedAt) {
+    // Game is running - count time from gameStartedAt to now
+    const startTime = typeof gameStartedAt === 'string' 
+      ? new Date(gameStartedAt).getTime() 
+      : gameStartedAt;
+    
+    // If game has been resumed, we need to account for the pause duration
+    if (gameResumedAt) {
+      // Game was paused and then resumed
+      // Elapsed = (pausedTime - startTime) + (now - resumedTime)
+      const pausedTime = typeof gamePausedAt === 'string'
+        ? new Date(gamePausedAt).getTime()
+        : gamePausedAt;
+      const resumedTime = typeof gameResumedAt === 'string'
+        ? new Date(gameResumedAt).getTime()
+        : gameResumedAt;
+      
+      const timeBefoPause = pausedTime - startTime;
+      const timeAfterResume = now - resumedTime;
+      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
+    } else {
+      // Game hasn't been paused yet
+      elapsedSec = Math.max(1, Math.floor((now - startTime) / 1000));
+    }
+  } else if (gameStatus === 'PAUSED' && gameStartedAt && gamePausedAt) {
+    // Game is paused - show elapsed time at pause moment (don't continue counting)
+    const startTime = typeof gameStartedAt === 'string'
+      ? new Date(gameStartedAt).getTime()
+      : gameStartedAt;
+    const pausedTime = typeof gamePausedAt === 'string'
+      ? new Date(gamePausedAt).getTime()
+      : gamePausedAt;
+    
+    if (gameResumedAt) {
+      // Was paused, then resumed, now paused again - this shouldn't happen but handle it
+      const resumedTime = typeof gameResumedAt === 'string'
+        ? new Date(gameResumedAt).getTime()
+        : gameResumedAt;
+      const timeBefoPause = resumedTime - startTime;
+      const timeAfterResume = pausedTime - resumedTime;
+      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
+    } else {
+      // First pause
+      elapsedSec = Math.max(1, Math.floor((pausedTime - startTime) / 1000));
+    }
+  } else if (isGameOver && gameStartedAt) {
+    // Game is over - show the final elapsed time (don't continue counting)
+    const startTime = typeof gameStartedAt === 'string'
+      ? new Date(gameStartedAt).getTime()
+      : gameStartedAt;
+    
+    if (gameResumedAt && gamePausedAt) {
+      // Game had pause/resume cycle(s) before concluding
+      const pausedTime = typeof gamePausedAt === 'string'
+        ? new Date(gamePausedAt).getTime()
+        : gamePausedAt;
+      const resumedTime = typeof gameResumedAt === 'string'
+        ? new Date(gameResumedAt).getTime()
+        : gameResumedAt;
+      const timeBefoPause = pausedTime - startTime;
+      const timeAfterResume = now - resumedTime;
+      elapsedSec = Math.max(1, Math.floor((timeBefoPause + timeAfterResume) / 1000));
+    } else {
+      // No pause/resume, just from start to now
+      elapsedSec = Math.max(1, Math.floor((now - startTime) / 1000));
+    }
+  }
+  
   const partyDps = Math.floor(totalDamage / elapsedSec);
   const hpRatio = bossHealth / bossMaxHealth;
 

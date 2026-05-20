@@ -43,6 +43,10 @@ export default function BossBattleView() {
         mvpPlayer={battleData.mvpPlayer}
         gameOutcome={battleData.gameOutcome}
         lowHp={battleData.lowHp}
+        gameStatus={battleData.gameStatus}
+        gameStartedAt={battleData.gameStartedAt}
+        gamePausedAt={battleData.gamePausedAt}
+        gameResumedAt={battleData.gameResumedAt}
       />
     </div>
   );
