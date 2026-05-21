@@ -52,6 +52,8 @@ async function initializeEvent(eventId, config, puzzles = []) {
                 sequence_order: index,
                 question_payload: puzzle.question_payload,
                 question_type: puzzle.question_type || 'TEXT',
+                image_url: puzzle.image_url || '',
+                link_url: puzzle.link_url || '',
                 correct_answer: puzzle.correct_answer.toLowerCase().trim(),
                 answer_aliases: (puzzle.answer_aliases || []).map(a => a.toLowerCase().trim()),
                 fixed_damage_value: puzzle.fixed_damage_value || 50,

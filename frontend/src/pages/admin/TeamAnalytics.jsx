@@ -123,7 +123,14 @@ export default function TeamAnalytics() {
                         {team.team_name}
                       </p>
                       <p className="font-mono text-xs text-[var(--text-muted)]">
-                        {members.length} members
+                        {members.length > 0
+                          ? members.map((name, i) => (
+                              <span key={i}>
+                                <span className="text-[var(--neon-cyan)] opacity-80">{name}</span>
+                                {i < members.length - 1 && <span className="text-[var(--border-dim)]"> · </span>}
+                              </span>
+                            ))
+                          : 'No members'}
                       </p>
                     </td>
                     <td className="py-3 pr-4 font-mono text-[var(--neon-green)]">

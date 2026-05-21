@@ -1,24 +1,4 @@
 {
-    "indexes": [
-        {
-            "collectionGroup": "puzzle_pool",
-            "queryScope": "Collection",
-            "fields": [
-                {
-                    "fieldPath": "sequence_order",
-                    "order": "ASCENDING"
-                }
-            ]
-        },
-        {
-            "collectionGroup": "teams",
-            "queryScope": "Collection",
-            "fields": [
-                {
-                    "fieldPath": "total_damage_dealt",
-                    "order": "DESCENDING"
-                }
-            ]
-        }
-    ]
+    "indexes": [],
+    "fieldOverrides": []
 }

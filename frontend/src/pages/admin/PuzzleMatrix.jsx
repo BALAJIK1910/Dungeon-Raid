@@ -11,6 +11,8 @@ const emptyPuzzle = {
   sequence_order: '',
   question_type: 'TEXT',
   question_payload: '',
+  image_url: '',
+  link_url: '',
   correct_answer: '',
   answer_aliases: '',
   fixed_damage_value: '100',
@@ -97,6 +99,8 @@ export default function PuzzleMatrix() {
         sequence_order: Number(form.sequence_order) || nextSequence,
         question_type: form.question_type,
         question_payload: form.question_payload.trim(),
+        image_url: form.image_url.trim(),
+        link_url: form.link_url.trim(),
         correct_answer: form.correct_answer.trim(),
         answer_aliases: splitAliases(form.answer_aliases),
         fixed_damage_value: Number(form.fixed_damage_value) || 100,
@@ -137,6 +141,8 @@ export default function PuzzleMatrix() {
       sequence_order: puzzle.sequence_order,
       question_type: puzzle.question_type,
       question_payload: puzzle.question_payload,
+      image_url: puzzle.image_url || '',
+      link_url: puzzle.link_url || '',
       correct_answer: puzzle.correct_answer,
       answer_aliases: Array.isArray(puzzle.answer_aliases)
         ? puzzle.answer_aliases.join('\n')
@@ -170,6 +176,8 @@ export default function PuzzleMatrix() {
         sequence_order: Number(editForm.sequence_order) || 1,
         question_type: editForm.question_type,
         question_payload: editForm.question_payload.trim(),
+        image_url: (editForm.image_url || '').trim(),
+        link_url: (editForm.link_url || '').trim(),
         correct_answer: editForm.correct_answer.trim(),
         answer_aliases: splitAliases(editForm.answer_aliases),
         fixed_damage_value: Number(editForm.fixed_damage_value) || 100,
@@ -264,6 +272,35 @@ export default function PuzzleMatrix() {
               className={`${inputClass} min-h-[120px] resize-y`}
               value={form.question_payload}
               onChange={(event) => updateField('question_payload', event.target.value)}
+            />
+          </Field>
+
+          <Field label="Image URL (optional)">
+            <input
+              className={inputClass}
+              type="url"
+              placeholder="https://example.com/image.png"
+              value={form.image_url}
+              onChange={(event) => updateField('image_url', event.target.value)}
+            />
+            {form.image_url && (
+              <img
+                src={form.image_url}
+                alt="Preview"
+                className="mt-2 max-h-[120px] rounded border border-[var(--border-dim)] object-contain bg-black/40"
+                onError={(e) => { e.target.style.display = 'none'; }}
+                onLoad={(e) => { e.target.style.display = 'block'; }}
+              />
+            )}
+          </Field>
+
+          <Field label="Reference Link (optional)">
+            <input
+              className={inputClass}
+              type="url"
+              placeholder="https://example.com/reference"
+              value={form.link_url}
+              onChange={(event) => updateField('link_url', event.target.value)}
             />
           </Field>
 
@@ -414,6 +451,35 @@ export default function PuzzleMatrix() {
                   />
                 </Field>
 
+                <Field label="Image URL (optional)">
+                  <input
+                    className={inputClass}
+                    type="url"
+                    placeholder="https://example.com/image.png"
+                    value={editForm.image_url}
+                    onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })}
+                  />
+                  {editForm.image_url && (
+                    <img
+                      src={editForm.image_url}
+                      alt="Preview"
+                      className="mt-2 max-h-[120px] rounded border border-[var(--border-dim)] object-contain bg-black/40"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                      onLoad={(e) => { e.target.style.display = 'block'; }}
+                    />
+                  )}
+                </Field>
+
+                <Field label="Reference Link (optional)">
+                  <input
+                    className={inputClass}
+                    type="url"
+                    placeholder="https://example.com/reference"
+                    value={editForm.link_url}
+                    onChange={(e) => setEditForm({ ...editForm, link_url: e.target.value })}
+                  />
+                </Field>
+
                 <Field label="Correct Answer">
                   <input
                     className={inputClass}
@@ -517,9 +583,31 @@ export default function PuzzleMatrix() {
                 </button>
               </div>
 
-              <p className="font-mono text-[var(--text-primary)] whitespace-pre-wrap mb-4">
+              <p className="font-mono text-[var(--text-primary)] whitespace-pre-wrap mb-3">
                 {puzzle.question_payload}
               </p>
+
+              {puzzle.image_url && (
+                <div className="mb-3">
+                  <img
+                    src={puzzle.image_url}
+                    alt="Puzzle attachment"
+                    className="max-h-[80px] rounded border border-[var(--border-dim)] object-contain bg-black/40"
+                  />
+                </div>
+              )}
+
+              {puzzle.link_url && (
+                <a
+                  href={puzzle.link_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mb-3 font-mono text-xs text-[var(--neon-blue)] underline underline-offset-2 hover:text-[var(--neon-cyan)] transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  🔗 {puzzle.link_url.length > 50 ? puzzle.link_url.slice(0, 50) + '…' : puzzle.link_url}
+                </a>
+              )}
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                 <div>

@@ -392,8 +392,51 @@ export default function PlayerPortal() {
 
             {/* Puzzle content */}
             {puzzle ? (
-              <div className="font-mono text-[var(--text-primary)] leading-loose mb-8 whitespace-pre-wrap">
-                {puzzle.question_payload}
+              <div className="mb-8 flex flex-col gap-4">
+                {/* Question text */}
+                <div className="font-mono text-[var(--text-primary)] leading-loose whitespace-pre-wrap">
+                  {puzzle.question_payload}
+                </div>
+
+                {/* Puzzle image */}
+                {puzzle.image_url && (
+                  <div
+                    className="relative overflow-hidden rounded border border-[var(--neon-cyan)]/30 bg-black/40 p-2"
+                    style={{ boxShadow: '0 0 20px rgba(0,255,255,0.08)' }}
+                  >
+                    <img
+                      src={puzzle.image_url}
+                      alt="Puzzle visual"
+                      className="max-w-full max-h-[320px] mx-auto object-contain rounded"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling && (e.target.nextSibling.style.display = 'block');
+                      }}
+                    />
+                    <p
+                      className="font-mono text-xs text-[var(--neon-red)] text-center py-4"
+                      style={{ display: 'none' }}
+                    >
+                      ⚠ IMAGE FAILED TO LOAD
+                    </p>
+                  </div>
+                )}
+
+                {/* Reference link */}
+                {puzzle.link_url && (
+                  <a
+                    href={puzzle.link_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-[var(--neon-blue)]/40 bg-[var(--neon-blue)]/10 text-[var(--neon-blue)] font-mono text-sm rounded hover:bg-[var(--neon-blue)]/20 hover:border-[var(--neon-blue)]/60 transition-all w-fit"
+                  >
+                    <span>🔗</span>
+                    <span className="underline underline-offset-2">
+                      VIEW REFERENCE
+                    </span>
+                    <span className="text-xs opacity-60">↗</span>
+                  </a>
+                )}
               </div>
             ) : (
               <div className="font-mono text-[var(--text-secondary)] mb-8">
