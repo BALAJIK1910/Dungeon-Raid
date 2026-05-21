@@ -39,6 +39,7 @@ export default function BossBattleView() {
         bossMaxHealth={battleData.bossMaxHealth}
         combatLog={battleData.combatLog}
         phase={battleData.phase}
+        currentRound={battleData.currentRound}
         isGameOver={battleData.isGameOver}
         mvpPlayer={battleData.mvpPlayer}
         gameOutcome={battleData.gameOutcome}

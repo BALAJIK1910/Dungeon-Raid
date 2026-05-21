@@ -21,13 +21,42 @@ const RANK_POS = [
   { x: -360, y: -50, scale: 0.85, z: 3 },
 ];
 
+// Round-based background + ring themes
+const ROUND_THEMES = {
+  1: {
+    bg: 'radial-gradient(ellipse 80% 60% at 50% 35%, oklch(0.35 0.18 30 / 0.55) 0%, oklch(0.08 0.02 25 / 0.95) 60%, #000 100%), linear-gradient(180deg, #0a0608 0%, #050203 100%)',
+    ring: 'conic-gradient(from 0deg, transparent 0deg, oklch(0.7 0.22 35 / 0.6) 60deg, transparent 120deg, oklch(0.75 0.18 60 / 0.5) 200deg, transparent 260deg, oklch(0.65 0.22 30 / 0.55) 320deg, transparent 360deg)',
+    accent: 'var(--ember)',
+    label: 'ROUND 1',
+    subtitle: 'AWAKENING',
+    hpBar: 'linear-gradient(90deg, oklch(0.35 0.16 28), oklch(0.62 0.22 32))',
+  },
+  2: {
+    bg: 'radial-gradient(ellipse 80% 60% at 50% 35%, oklch(0.28 0.22 290 / 0.6) 0%, oklch(0.08 0.06 280 / 0.95) 60%, #000 100%), linear-gradient(180deg, #0a0412 0%, #030108 100%)',
+    ring: 'conic-gradient(from 0deg, transparent 0deg, oklch(0.6 0.28 290 / 0.7) 60deg, transparent 120deg, oklch(0.7 0.24 320 / 0.6) 200deg, transparent 260deg, oklch(0.55 0.26 270 / 0.6) 320deg, transparent 360deg)',
+    accent: '#d946ef',
+    label: 'ROUND 2',
+    subtitle: 'FURY',
+    hpBar: 'linear-gradient(90deg, oklch(0.35 0.22 290), oklch(0.55 0.26 310))',
+  },
+  3: {
+    bg: 'radial-gradient(ellipse 80% 60% at 50% 35%, oklch(0.4 0.3 25 / 0.7) 0%, oklch(0.1 0.08 15 / 0.95) 60%, #000 100%), linear-gradient(180deg, #120302 0%, #050000 100%)',
+    ring: 'conic-gradient(from 0deg, transparent 0deg, oklch(0.7 0.3 25 / 0.8) 60deg, transparent 120deg, oklch(0.8 0.25 40 / 0.7) 200deg, transparent 260deg, oklch(0.65 0.3 15 / 0.7) 320deg, transparent 360deg)',
+    accent: '#ff4444',
+    label: 'ROUND 3',
+    subtitle: 'FINAL STAND',
+    hpBar: 'linear-gradient(90deg, oklch(0.4 0.28 20), oklch(0.65 0.3 25))',
+  },
+};
+
 function BossRaidPage({
   players = [],
   damages = {},
   bossHealth = 1000000,
   bossMaxHealth = 1000000,
   combatLog = [],
-  phase = 'Phase I — Awakening',
+  phase = 'Round 1 — Awakening',
+  currentRound = 1,
   isGameOver = false,
   mvpPlayer = null,
   gameOutcome = null,
@@ -49,6 +78,8 @@ function BossRaidPage({
   const [critFlashKey, setCritFlashKey] = useState(0);
   const [sound, setSound] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [showRoundAnnounce, setShowRoundAnnounce] = useState(null);
+  const prevRoundRef = useRef(currentRound);
   const floatId = useRef(0);
   const fxId = useRef(0);
   const prevDamagesRef = useRef(damages);
@@ -57,6 +88,17 @@ function BossRaidPage({
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
   }, []);
+
+  // Detect round transitions
+  useEffect(() => {
+    if (currentRound !== prevRoundRef.current && gameStatus === 'ACTIVE') {
+      prevRoundRef.current = currentRound;
+      setShowRoundAnnounce(currentRound);
+      const timer = setTimeout(() => setShowRoundAnnounce(null), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevRoundRef.current = currentRound;
+  }, [currentRound, gameStatus]);
 
   useEffect(() => {
     if (sound && lowHp) raidAudio.startHeartbeat();
@@ -185,6 +227,7 @@ function BossRaidPage({
 
   const partyDps = elapsedSec > 0 ? Math.floor(totalDamage / elapsedSec) : 0;
   const hpRatio = bossHealth / bossMaxHealth;
+  const theme = ROUND_THEMES[currentRound] || ROUND_THEMES[1];
 
   const toggleSound = () => {
     const next = !sound;
@@ -194,13 +237,13 @@ function BossRaidPage({
 
   return (
     <main className={`relative h-full w-full overflow-hidden text-foreground ${shake}`}>
-      {/* Background */}
+      {/* Background — themed per round */}
       <div
         aria-hidden
         className="absolute inset-0 z-0"
         style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% 35%, oklch(0.35 0.18 30 / 0.55) 0%, oklch(0.08 0.02 25 / 0.95) 60%, #000 100%), linear-gradient(180deg, #0a0608 0%, #050203 100%)',
+          background: theme.bg,
+          transition: 'background 1.2s ease-in-out',
         }}
       />
       <Embers />
@@ -233,6 +276,8 @@ function BossRaidPage({
         hp={bossHealth}
         max={bossMaxHealth}
         phase={phase}
+        currentRound={currentRound}
+        theme={theme}
         lowHp={lowHp}
         elapsedSec={elapsedSec}
         partyDps={partyDps}
@@ -285,7 +330,7 @@ function BossRaidPage({
 
       {/* Scene */}
       <div className="absolute inset-0 z-10 flex items-center justify-center">
-        <BossSprite hitKey={hitKey} dead={isGameOver} lowHp={lowHp} flow={bossFlow} />
+        <BossSprite hitKey={hitKey} dead={isGameOver} lowHp={lowHp} flow={bossFlow} theme={theme} />
         <PlayersArena ranked={ranked} attackFx={attackFx} />
       </div>
 
@@ -310,6 +355,80 @@ function BossRaidPage({
           </div>
         ))}
       </div>
+
+      {/* Round transition announcement */}
+      <AnimatePresence>
+        {showRoundAnnounce && (
+          <motion.div
+            key={`round-announce-${showRoundAnnounce}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none"
+          >
+            {/* Dark overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.6 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute inset-0 bg-black"
+            />
+            {/* Horizontal slash lines */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              exit={{ scaleX: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="absolute left-0 right-0 h-[2px]"
+              style={{
+                top: 'calc(50% - 60px)',
+                background: `linear-gradient(90deg, transparent, ${ROUND_THEMES[showRoundAnnounce].accent}, transparent)`,
+                boxShadow: `0 0 20px ${ROUND_THEMES[showRoundAnnounce].accent}`,
+              }}
+            />
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              exit={{ scaleX: 0, opacity: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut', delay: 0.05 }}
+              className="absolute left-0 right-0 h-[2px]"
+              style={{
+                top: 'calc(50% + 60px)',
+                background: `linear-gradient(90deg, transparent, ${ROUND_THEMES[showRoundAnnounce].accent}, transparent)`,
+                boxShadow: `0 0 20px ${ROUND_THEMES[showRoundAnnounce].accent}`,
+              }}
+            />
+            {/* Round text */}
+            <div className="relative flex flex-col items-center gap-2">
+              <motion.span
+                initial={{ opacity: 0, letterSpacing: '0.8em', y: -10 }}
+                animate={{ opacity: 1, letterSpacing: '0.5em', y: 0 }}
+                exit={{ opacity: 0, letterSpacing: '1em', y: 10 }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+                className="font-mono text-[0.75rem] uppercase tracking-[0.5em]"
+                style={{ color: ROUND_THEMES[showRoundAnnounce].accent }}
+              >
+                {ROUND_THEMES[showRoundAnnounce].subtitle}
+              </motion.span>
+              <motion.h2
+                initial={{ opacity: 0, scale: 1.3, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="font-display text-6xl font-black uppercase tracking-[0.3em] md:text-8xl"
+                style={{
+                  color: ROUND_THEMES[showRoundAnnounce].accent,
+                  textShadow: `0 0 40px ${ROUND_THEMES[showRoundAnnounce].accent}, 0 0 80px ${ROUND_THEMES[showRoundAnnounce].accent}55`,
+                }}
+              >
+                {ROUND_THEMES[showRoundAnnounce].label}
+              </motion.h2>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {isGameOver && <VictoryOverlay mvp={mvpPlayer || ranked[0]} totalDamage={totalDamage} seconds={elapsedSec} outcome={gameOutcome} />}
     </main>
@@ -367,7 +486,7 @@ function HitBurst({ crit, color }) {
   );
 }
 
-function BossHeader({ hpRatio, hp, max, phase, lowHp, elapsedSec, partyDps }) {
+function BossHeader({ hpRatio, hp, max, phase, currentRound, theme, lowHp, elapsedSec, partyDps }) {
   const pct = Math.max(0, hpRatio * 100);
   const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
   const secs = String(elapsedSec % 60).padStart(2, '0');
@@ -375,26 +494,37 @@ function BossHeader({ hpRatio, hp, max, phase, lowHp, elapsedSec, partyDps }) {
   return (
     <header className="absolute inset-x-0 top-0 z-[80] flex flex-col items-center px-8 pt-6">
       <div className="flex items-center gap-3 text-[0.7rem] font-mono uppercase tracking-[0.4em] text-muted-foreground">
-        <span className="h-px w-12 bg-gradient-to-r from-transparent to-ember/60" />
-        <span className="text-ember">World Boss · Tier VII</span>
-        <span className="h-px w-12 bg-gradient-to-l from-transparent to-ember/60" />
+        <span className="h-px w-12 bg-gradient-to-r from-transparent to-border" />
+        <span style={{ color: theme.accent, textShadow: `0 0 10px ${theme.accent}66` }}>
+          World Boss · Tier VII · Round {currentRound}
+        </span>
+        <span className="h-px w-12 bg-gradient-to-l from-transparent to-border" />
       </div>
-      <h1 className="font-display text-glow-ember mt-1 text-3xl font-black uppercase tracking-[0.35em] md:text-5xl">
+      <h1 
+        className="font-display mt-1 text-3xl font-black uppercase tracking-[0.35em] md:text-5xl transition-all duration-1000"
+        style={{
+          color: 'var(--foreground)',
+          textShadow: `0 0 20px ${theme.accent}88, 0 0 40px ${theme.accent}33`,
+        }}
+      >
         Ancient Dragon of the Abyss
       </h1>
 
       <div className="mt-4 flex w-full max-w-3xl items-center gap-4">
-        <Stat label="Phase" value={phase.replace(/^Phase\s+\w+\s+—\s+/, '')} accent />
+        <Stat 
+          label="Phase" 
+          value={phase.replace(/^Round\s+\d+\s+—\s+/, '')} 
+          accent 
+          accentColor={theme.accent}
+        />
         <div className={`relative h-6 flex-1 overflow-hidden rounded-sm border border-border bg-black/70 ${lowHp ? 'low-hp' : ''}`}>
           <div
             className="hp-shimmer relative h-full overflow-hidden"
             style={{
               width: `${pct}%`,
-              background: lowHp
-                ? 'linear-gradient(90deg, oklch(0.45 0.22 25), oklch(0.7 0.25 25))'
-                : 'linear-gradient(90deg, oklch(0.35 0.16 28), oklch(0.62 0.22 32))',
-              transition: 'width 0.35s ease-out',
-              boxShadow: '0 0 18px oklch(0.6 0.22 30 / 0.55)',
+              background: theme.hpBar,
+              transition: 'width 0.35s ease-out, background 1s ease-in-out',
+              boxShadow: `0 0 18px ${theme.accent}66`,
             }}
           />
           <div className="pointer-events-none absolute inset-0 flex">
@@ -413,12 +543,13 @@ function BossHeader({ hpRatio, hp, max, phase, lowHp, elapsedSec, partyDps }) {
   );
 }
 
-function Stat({ label, value, accent, mono }) {
+function Stat({ label, value, accent, mono, accentColor }) {
   return (
     <div className="flex min-w-[88px] flex-col items-center">
       <span className="text-[0.6rem] font-mono uppercase tracking-[0.3em] text-muted-foreground">{label}</span>
       <span
-        className={`text-sm font-bold ${mono ? 'font-mono' : 'font-display'} ${accent ? 'text-ember text-glow-ember' : 'text-foreground'}`}
+        className={`text-sm font-bold ${mono ? 'font-mono' : 'font-display'} ${accent ? 'text-glow-ember' : 'text-foreground'}`}
+        style={accent && accentColor ? { color: accentColor, textShadow: `0 0 12px ${accentColor}` } : {}}
       >
         {value}
       </span>
@@ -550,7 +681,7 @@ function CombatLog({ log }) {
   );
 }
 
-function BossSprite({ hitKey, dead, lowHp, flow }) {
+function BossSprite({ hitKey, dead, lowHp, flow, theme }) {
   return (
     <div className="relative flex h-[720px] w-[720px] items-center justify-center">
       <div
@@ -559,10 +690,9 @@ function BossSprite({ hitKey, dead, lowHp, flow }) {
       >
         <div
           aria-hidden
-          className="ring-spin absolute inset-x-0 bottom-10 mx-auto h-[420px] w-[420px] rounded-full opacity-60"
+          className="ring-spin absolute inset-x-0 bottom-10 mx-auto h-[420px] w-[420px] rounded-full opacity-60 transition-all duration-1000"
           style={{
-            background:
-              'conic-gradient(from 0deg, transparent 0deg, oklch(0.7 0.22 35 / 0.6) 60deg, transparent 120deg, oklch(0.75 0.18 60 / 0.5) 200deg, transparent 260deg, oklch(0.65 0.22 30 / 0.55) 320deg, transparent 360deg)',
+            background: theme.ring,
             maskImage: 'radial-gradient(circle, transparent 58%, #000 60%, #000 64%, transparent 66%)',
             WebkitMaskImage: 'radial-gradient(circle, transparent 58%, #000 60%, #000 64%, transparent 66%)',
             filter: `blur(0.5px) ${lowHp ? 'saturate(1.4)' : ''}`,
@@ -570,9 +700,9 @@ function BossSprite({ hitKey, dead, lowHp, flow }) {
         />
         <div
           aria-hidden
-          className="absolute bottom-6 h-32 w-[520px] rounded-[50%]"
+          className="absolute bottom-6 h-32 w-[520px] rounded-[50%] transition-all duration-1000"
           style={{
-            background: 'radial-gradient(ellipse at center, oklch(0.6 0.22 30 / 0.55), transparent 70%)',
+            background: `radial-gradient(ellipse at center, ${theme.accent}66, transparent 70%)`,
             filter: 'blur(6px)',
           }}
         />

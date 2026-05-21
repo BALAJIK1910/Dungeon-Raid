@@ -110,10 +110,16 @@ export function useBossBattleSync(eventId) {
   const concludedAt = gameState?.concluded_at || null;
   const totalPausedDurationMs = gameState?.total_paused_duration_ms || 0;
 
-  const phaseRatio = bossHealth / bossMaxHealth;
-  let phase = 'Phase I — Awakening';
-  if (phaseRatio <= 0.33) phase = 'Phase III — Enrage';
-  else if (phaseRatio <= 0.66) phase = 'Phase II — Fury';
+  const hpRatio = bossHealth / bossMaxHealth;
+  let currentRound = 1;
+  let phase = 'Round 1 — Awakening';
+  if (hpRatio <= 0.30) {
+    currentRound = 3;
+    phase = 'Round 3 — Final Stand';
+  } else if (hpRatio <= 0.70) {
+    currentRound = 2;
+    phase = 'Round 2 — Fury';
+  }
 
   return {
     players,
@@ -131,6 +137,7 @@ export function useBossBattleSync(eventId) {
     isGameOver: gameStatus === 'CONCLUDED',
     mvpPlayer,
     phase,
-    lowHp: phaseRatio < 0.25 && !['PENDING', 'CONCLUDED'].includes(gameStatus),
+    currentRound,
+    lowHp: hpRatio <= 0.30 && !['PENDING', 'CONCLUDED'].includes(gameStatus),
   };
 }
