@@ -191,20 +191,15 @@ export const submitAnswer = async (data) => {
   }
 
   try {
-    // Use cached puzzle order if available, otherwise fetch
-    let puzzleOrder = sessionStorage.getItem('tw_puzzleOrder');
-    if (!puzzleOrder) {
-      const puzzleOrderSnapshot = await getDocs(
-        query(collection(db, 'events', eventId, 'puzzle_pool'), orderBy('sequence_order', 'asc'))
-      );
-      puzzleOrder = puzzleOrderSnapshot.docs.map((snapshot) => ({
-        puzzleId: snapshot.id,
-        ...snapshot.data(),
-      }));
-      sessionStorage.setItem('tw_puzzleOrder', JSON.stringify(puzzleOrder));
-    } else {
-      puzzleOrder = JSON.parse(puzzleOrder);
-    }
+    // Always fetch fresh puzzle order to avoid stale sessionStorage cache
+    const puzzleOrderSnapshot = await getDocs(
+      query(collection(db, 'events', eventId, 'puzzle_pool'), orderBy('sequence_order', 'asc'))
+    );
+    const puzzleOrder = puzzleOrderSnapshot.docs.map((snapshot) => ({
+      puzzleId: snapshot.id,
+      ...snapshot.data(),
+    }));
+    sessionStorage.setItem('tw_puzzleOrder', JSON.stringify(puzzleOrder));
 
     const result = await runTransaction(db, async (transaction) => {
       const eventRef = doc(db, 'events', eventId);
