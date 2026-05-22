@@ -277,6 +277,12 @@ export default function PlayerPortal() {
   const [submitError, setSubmitError] = useState('');
   const [submitMessage, setSubmitMessage] = useState('');
   const [cooldownExpiry, setCooldownExpiry] = useState(0);
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error state when puzzle changes
+  useEffect(() => {
+    setImageError(false);
+  }, [puzzle?.puzzleId, puzzle?.image_url]);
 
   // DEBUG: Log component mount
   useEffect(() => {
@@ -490,21 +496,18 @@ export default function PlayerPortal() {
                     className="relative overflow-hidden rounded border border-[var(--neon-cyan)]/30 bg-black/40 p-2"
                     style={{ boxShadow: '0 0 20px rgba(0,255,255,0.08)' }}
                   >
-                    <img
-                      src={puzzle.image_url}
-                      alt="Puzzle visual"
-                      className="max-w-full max-h-[320px] mx-auto object-contain rounded"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling && (e.target.nextSibling.style.display = 'block');
-                      }}
-                    />
-                    <p
-                      className="font-mono text-xs text-[var(--neon-red)] text-center py-4"
-                      style={{ display: 'none' }}
-                    >
-                      ⚠ IMAGE FAILED TO LOAD
-                    </p>
+                    {!imageError ? (
+                      <img
+                        src={puzzle.image_url}
+                        alt="Puzzle visual"
+                        className="max-w-full max-h-[320px] mx-auto object-contain rounded"
+                        onError={() => setImageError(true)}
+                      />
+                    ) : (
+                      <p className="font-mono text-xs text-[var(--neon-red)] text-center py-4">
+                        ⚠ IMAGE FAILED TO LOAD
+                      </p>
+                    )}
                   </div>
                 )}
 

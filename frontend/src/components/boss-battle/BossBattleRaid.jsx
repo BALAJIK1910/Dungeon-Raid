@@ -729,9 +729,9 @@ function BossSprite({ hitKey, dead, lowHp, flow, theme }) {
 function PlayersArena({ ranked, attackFx }) {
   return (
     <div className="absolute bottom-[8%] left-1/2 z-[30] h-[280px] w-[900px] -translate-x-1/2">
-      {ranked.map((p, rankIndex) => {
+      {ranked.slice(0, 5).map((p, rankIndex) => {
         const pos = RANK_POS[rankIndex];
-        const color = tokenColor[p.token];
+        const color = tokenColor[p.token] || 'var(--phantom-gold)';
         const fx = attackFx[p.id];
         return (
           <div

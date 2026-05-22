@@ -59,7 +59,8 @@ class BossScene extends Phaser.Scene {
       sprite.setScale(0.15);
       sprite.setData('playerId', player.id);
       sprite.setData('playerName', player.name);
-      sprite.setTint(parseInt(player.color.replace('#', '0x')));
+      const colorStr = player.color && typeof player.color === 'string' ? player.color : '#FFE81F';
+      sprite.setTint(parseInt(colorStr.replace('#', '0x')));
       this.playerSprites.push(sprite);
     });
 
