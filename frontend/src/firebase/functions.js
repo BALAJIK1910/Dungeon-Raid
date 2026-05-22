@@ -239,6 +239,17 @@ export const submitAnswer = async (data) => {
       const team = teamSnap.data();
       const puzzle = puzzleSnap.data();
 
+      // Check if team is on cooldown from a previous wrong answer
+      const cooldownExpiry = team.submission_cooldown_expiry || 0;
+      if (cooldownExpiry > now) {
+        const remainingMs = cooldownExpiry - now;
+        return {
+          status: 'COOLDOWN',
+          message: `You are on cooldown. Wait ${Math.ceil(remainingMs / 1000)}s before trying again.`,
+          cooldown_remaining_ms: remainingMs,
+          cooldown_expiry: cooldownExpiry,
+        };
+      }
 
       const correct = checkAnswer(
         answerText,
@@ -247,9 +258,21 @@ export const submitAnswer = async (data) => {
       );
 
       if (!correct) {
+        // Increment strike count and apply cooldown penalty
+        const newStrikeCount = (team.cooldown_strike_count || 0) + 1;
+        const cooldownSeconds = calculateCooldown(newStrikeCount);
+        const newCooldownExpiry = now + cooldownSeconds * 1000;
+
+        transaction.update(teamRef, {
+          cooldown_strike_count: newStrikeCount,
+          submission_cooldown_expiry: newCooldownExpiry,
+        });
+
         return {
           status: 'WRONG',
           message: 'Incorrect answer',
+          cooldown_seconds: cooldownSeconds,
+          cooldown_expiry: newCooldownExpiry,
         };
       }
 

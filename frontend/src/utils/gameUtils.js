@@ -29,9 +29,7 @@ export function checkAnswer(submitted, correct, aliases = []) {
  */
 export function calculateCooldown(strikeCount) {
   if (strikeCount === 0) return 0;
-  const base = 10;
-  const multiplier = Math.pow(2, strikeCount - 1);
-  return Math.min(base * multiplier, 120);
+  return 10;
 }
 
 /**

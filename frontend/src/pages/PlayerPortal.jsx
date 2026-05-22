@@ -152,41 +152,111 @@ function VictoryScreen({ gameState }) {
 }
 
 /**
- * Answer input form
+ * Answer input form with cooldown overlay
  */
-function AnswerInput({ puzzle, onSubmit, isLoading }) {
+function AnswerInput({ puzzle, onSubmit, isLoading, cooldownExpiry }) {
   const [answer, setAnswer] = useState('');
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const [cooldownTotal, setCooldownTotal] = useState(0);
+
+  // Tick the cooldown timer
+  useEffect(() => {
+    if (!cooldownExpiry || cooldownExpiry <= Date.now()) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const initialRemaining = cooldownExpiry - Date.now();
+    setCooldownTotal(initialRemaining);
+    setCooldownRemaining(initialRemaining);
+    const interval = setInterval(() => {
+      const remaining = cooldownExpiry - Date.now();
+      if (remaining <= 0) {
+        setCooldownRemaining(0);
+        clearInterval(interval);
+      } else {
+        setCooldownRemaining(remaining);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [cooldownExpiry]);
+
+  const isOnCooldown = cooldownRemaining > 0;
+  const cooldownSeconds = Math.ceil(cooldownRemaining / 1000);
+  const circumference = 2 * Math.PI * 30;
+  const progress = cooldownTotal > 0 ? cooldownRemaining / cooldownTotal : 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!answer.trim()) return;
+    if (!answer.trim() || isOnCooldown) return;
     await onSubmit(answer);
     setAnswer('');
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative border border-[var(--border-dim)] bg-[var(--bg-raised)] p-4 flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <span className="text-[var(--neon-cyan)] font-mono">&gt;</span>
-        <input
-          type="text"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          disabled={isLoading}
-          autoFocus
-          placeholder="ENTER SOLUTION"
-          className="bg-transparent border-none outline-none text-[var(--text-primary)] font-mono flex-1 placeholder:text-[var(--text-muted)]"
-        />
-      </div>
-      <HudButton
-        type="submit"
-        variant="success"
-        disabled={isLoading || !answer.trim()}
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <span className="text-xl">⚡</span> {isLoading ? 'SUBMITTING...' : 'DEPLOY ATTACK'}
-      </HudButton>
-    </form>
+    <div className="relative">
+      <form onSubmit={handleSubmit} className={`relative border bg-[var(--bg-raised)] p-4 flex flex-col gap-4 transition-all duration-300 ${
+        isOnCooldown
+          ? 'border-[var(--neon-red)]/60 shadow-[0_0_20px_rgba(255,50,50,0.15)]'
+          : 'border-[var(--border-dim)]'
+      }`}>
+        {/* Cooldown overlay */}
+        {isOnCooldown && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/70 backdrop-blur-[2px]" style={{ borderRadius: 'inherit' }}>
+            {/* Animated ring timer */}
+            <div className="relative mb-3">
+              <svg width="72" height="72" viewBox="0 0 72 72" className="-rotate-90">
+                <circle cx="36" cy="36" r="30" fill="none" stroke="var(--neon-red)" strokeWidth="2" opacity="0.15" />
+                <circle
+                  cx="36" cy="36" r="30" fill="none"
+                  stroke="var(--neon-red)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={`${circumference}`}
+                  strokeDashoffset={`${circumference * (1 - progress)}`}
+                  style={{
+                    filter: 'drop-shadow(0 0 6px var(--neon-red))',
+                    transition: 'stroke-dashoffset 0.1s linear',
+                  }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center font-orbitron text-xl text-[var(--neon-red)] font-bold" style={{ textShadow: '0 0 12px var(--neon-red)' }}>
+                {cooldownSeconds}
+              </span>
+            </div>
+            <span className="font-rajdhani text-[var(--neon-red)] text-sm tracking-[0.3em] uppercase animate-pulse">
+              ⚠ SYSTEMS LOCKED
+            </span>
+            <span className="font-mono text-xs text-[var(--text-muted)] mt-1">
+              Wrong answer penalty active
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className={`font-mono ${isOnCooldown ? 'text-[var(--neon-red)]' : 'text-[var(--neon-cyan)]'}`}>&gt;</span>
+          <input
+            type="text"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            disabled={isLoading || isOnCooldown}
+            autoFocus
+            placeholder={isOnCooldown ? 'LOCKED — COOLDOWN ACTIVE' : 'ENTER SOLUTION'}
+            className="bg-transparent border-none outline-none text-[var(--text-primary)] font-mono flex-1 placeholder:text-[var(--text-muted)]"
+          />
+        </div>
+        <HudButton
+          type="submit"
+          variant={isOnCooldown ? 'danger' : 'success'}
+          disabled={isLoading || !answer.trim() || isOnCooldown}
+          className="w-full flex items-center justify-center gap-2"
+        >
+          {isOnCooldown
+            ? <><span className="text-xl">🔒</span> LOCKED — {cooldownSeconds}s</>
+            : <><span className="text-xl">⚡</span> {isLoading ? 'SUBMITTING...' : 'DEPLOY ATTACK'}</>
+          }
+        </HudButton>
+      </form>
+    </div>
   );
 }
 
@@ -206,6 +276,7 @@ export default function PlayerPortal() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitMessage, setSubmitMessage] = useState('');
+  const [cooldownExpiry, setCooldownExpiry] = useState(0);
 
   // DEBUG: Log component mount
   useEffect(() => {
@@ -301,6 +372,13 @@ export default function PlayerPortal() {
 
   // Handle answer submission
   const handleSubmitAnswer = async (answerText) => {
+    // Client-side cooldown guard
+    if (cooldownExpiry > Date.now()) {
+      const remainSec = Math.ceil((cooldownExpiry - Date.now()) / 1000);
+      setSubmitError(`⏳ COOLDOWN ACTIVE — Wait ${remainSec}s`);
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError('');
     setSubmitMessage('');
@@ -316,9 +394,17 @@ export default function PlayerPortal() {
 
       if (status === 'CORRECT') {
         setSubmitMessage(`✓ CRITICAL HIT: +${result.data.damage_dealt} DMG`);
+        setCooldownExpiry(0); // Clear cooldown on correct answer
         setTimeout(() => setSubmitMessage(''), 3000);
       } else if (status === 'WRONG') {
-        setSubmitError('✗ INCORRECT — TRY AGAIN');
+        const cdExpiry = result.data.cooldown_expiry || 0;
+        const cdSeconds = result.data.cooldown_seconds || 10;
+        setCooldownExpiry(cdExpiry);
+        setSubmitError(`✗ INCORRECT — LOCKED FOR ${cdSeconds}s`);
+      } else if (status === 'COOLDOWN') {
+        const cdExpiry = result.data.cooldown_expiry || 0;
+        setCooldownExpiry(cdExpiry);
+        setSubmitError(message || 'Cooldown active');
       } else if (status === 'TOO_LATE') {
         setSubmitError('⏱ TOO LATE — ANOTHER OPERATIVE STRUCK FIRST');
       } else {
@@ -462,6 +548,7 @@ export default function PlayerPortal() {
               puzzle={puzzle}
               onSubmit={handleSubmitAnswer}
               isLoading={submitting || isIntermission}
+              cooldownExpiry={cooldownExpiry}
             />
           </div>
         </main>
